@@ -1,0 +1,13 @@
+{
+	"comment": "",
+	"ignore": "test",
+	"package": [
+		{
+			"checksumSHA1": "1GXKdZR/ZUU06jKq5omzUUJ+31A=",
+			"path": "github.com/codegangsta/cli",
+			"revision": "f7b459e3463391ed8bd9cf1515d0d27ccf835efb",
+			"revisionTime": "2016-05-10T17:56:23Z"
+		}
+	],
+	"rootPath": "github.com/ginabythebay/ledger-tools"
+}
