@@ -1,0 +1,19 @@
+'when posting Expenses:Unknown':
+  - 'when transaction comment contains "CO: PACIFIC GAS & EL"':
+    - set payee: PGE
+    - replace posting with template: |
+        Expenses:Utilities:Gas   $0
+        Expenses:Utilities:Electric  $0
+        Expenses:Fix Me  {{.PostingValue}}
+  - 'when transaction comment contains "CO: SAN FRANCISCO WA"':
+    - set payee: SFPUC
+    - replace posting with template: |
+        Expenses:Utilities:Water   $0
+        Expenses:Utilities:Sewer  $0
+        Expenses:Fix Me  {{.PostingValue}}
+  - 'when transaction comment contains "ATM Withdrawal"':
+    - set payee: Cash Withdrawal
+    - replace posting with template: |
+        Expenses:Bank Fees   $3
+        Expenses:Fix Me  $0; adjust bank fees as needed
+        Assets:Cash
