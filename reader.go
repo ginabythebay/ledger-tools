@@ -1,34 +1,38 @@
 package main
 
 import (
-	"encoding/csv"
+	"bufio"
+	"fmt"
 	"io"
 	"log"
 	"os"
 
 	"github.com/codegangsta/cli"
+	"github.com/ginabythebay/ledger-tools/parser"
 )
 
-// amountNames is the set of names of columns that contain amounts.
-var amountNames = map[string]bool{
-	"amount":  true,
-	"balance": true,
+type openStreams struct {
+	all []io.Closer
+}
+
+func (s openStreams) Close() error {
+	var firstError error
+	for _, i := range s.all {
+		e := i.Close()
+		if firstError == nil && e != nil {
+			firstError = e
+		}
+	}
+	return firstError
+}
+
+func (s openStreams) add(c io.Closer) {
+	s.all = append(s.all, c)
 }
 
 // Format encapsulates what we know about the csv file.
 type Format struct {
 	amounts []int // indices to columns where amounts live
-}
-
-// NewFormat creates a Format based on a header record
-func NewFormat(header []string) (format *Format) {
-	amounts := []int{}
-	for i, token := range header {
-		if amountNames[token] {
-			amounts = append(amounts, i)
-		}
-	}
-	return &Format{amounts: amounts}
 }
 
 // Apply modifies the record according to the structure we have
@@ -47,22 +51,20 @@ func (format *Format) Apply(record []string) {
 	}
 }
 
-func openInput(c *cli.Context, d *os.File) (in *os.File, err error) {
+func openInput(name string, d *os.File) (in *os.File, err error) {
 	in = d
-	inputName := c.String("in")
-	if inputName != "" {
-		if in, err = os.Open(inputName); err != nil {
+	if name != "" {
+		if in, err = os.Open(name); err != nil {
 			return nil, err
 		}
 	}
 	return in, nil
 }
 
-func openOutput(c *cli.Context, d *os.File) (out *os.File, err error) {
+func openOutput(name string, d *os.File) (out *os.File, err error) {
 	out = d
-	inputName := c.String("out")
-	if inputName != "" {
-		if out, err = os.Create(inputName); err != nil {
+	if name != "" {
+		if out, err = os.Create(name); err != nil {
 			return nil, err
 		}
 	}
@@ -70,50 +72,47 @@ func openOutput(c *cli.Context, d *os.File) (out *os.File, err error) {
 }
 
 func cmdPrint(c *cli.Context) (result error) {
-	in, err := openInput(c, os.Stdin)
+	streams := openStreams{}
+	defer streams.Close()
+
+	in, err := openInput(c.String("in"), os.Stdin)
 	if err != nil {
 		log.Fatal(err)
 	}
 	if in != os.Stdin {
-		defer in.Close()
+		streams.add(in)
 	}
 	log.Printf("Reading from %q \n", in)
-	csvIn := csv.NewReader(in)
 
-	out, err := openOutput(c, os.Stdout)
+	ledger, err := parser.ParseLedger(in)
 	if err != nil {
 		log.Fatal(err)
 	}
-	if out != os.Stdout {
-		defer out.Close()
+
+	o, err := openOutput(c.String("out"), os.Stdout)
+	if err != nil {
+		log.Fatal(err)
 	}
-	log.Printf("Writing to %q \n", out)
-	csvOut := csv.NewWriter(out)
+	if o != os.Stdout {
+		streams.add(o)
+	}
+	log.Printf("Writing to %q \n", o)
+	out := bufio.NewWriter(o)
 
-	var format *Format
-
-	for {
-		record, err := csvIn.Read()
-		if err == io.EOF {
-			break
+	for i, t := range ledger {
+		if i != 0 {
+			fmt.Fprintln(out)
 		}
-		if err != nil {
-			log.Fatal(err)
-		}
-		if format == nil {
-			format = NewFormat(record)
-		} else {
-			format.Apply(record)
-		}
-		csvOut.Write(record)
+		fmt.Fprintf(out, "%s\n", t)
 	}
 
-	csvOut.Flush()
+	out.Flush()
 
 	return nil
 }
 
 func cmdRereckon(c *cli.Context) (result error) {
+
 	log.Println("TODO(gina)")
 	return nil
 }

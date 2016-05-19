@@ -19,6 +19,10 @@ type Posting struct {
 	Amount  string
 }
 
+func (p Posting) String() string {
+	return fmt.Sprintf("\t%s\t%s", p.Account, p.Amount)
+}
+
 // Transaction represents the movement of value between one or more accounts
 type Transaction struct {
 	Line     int
@@ -26,6 +30,20 @@ type Transaction struct {
 	Payee    string
 	Comment  string
 	Postings []Posting
+}
+
+func (t Transaction) String() string {
+	lines := make([]string, 0, len(t.Postings)+1)
+
+	date := t.Date.Format("2006/01/02")
+	header := fmt.Sprintf("%s\t%s%s", date, t.Payee, t.Comment)
+	lines = append(lines, header)
+
+	for _, p := range t.Postings {
+		lines = append(lines, p.String())
+	}
+
+	return strings.Join(lines, "\n")
 }
 
 // Validate checks to see if we have what appears to be a full transaction
