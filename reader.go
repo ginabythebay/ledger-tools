@@ -47,29 +47,45 @@ func (format *Format) Apply(record []string) {
 	}
 }
 
-func cmdMain(c *cli.Context) (result error) {
-	in := os.Stdin // default
-	inputName := c.GlobalString("in")
+func openInput(c *cli.Context, d *os.File) (in *os.File, err error) {
+	in = d
+	inputName := c.String("in")
 	if inputName != "" {
-		f, err := os.Open(inputName)
-		if err != nil {
-			log.Fatal(err)
+		if in, err = os.Open(inputName); err != nil {
+			return nil, err
 		}
-		in = f
-		defer f.Close()
+	}
+	return in, nil
+}
+
+func openOutput(c *cli.Context, d *os.File) (out *os.File, err error) {
+	out = d
+	inputName := c.String("out")
+	if inputName != "" {
+		if out, err = os.Create(inputName); err != nil {
+			return nil, err
+		}
+	}
+	return out, nil
+}
+
+func cmdPrint(c *cli.Context) (result error) {
+	in, err := openInput(c, os.Stdin)
+	if err != nil {
+		log.Fatal(err)
+	}
+	if in != os.Stdin {
+		defer in.Close()
 	}
 	log.Printf("Reading from %q \n", in)
 	csvIn := csv.NewReader(in)
 
-	out := os.Stdout // default
-	outputName := c.GlobalString("out")
-	if outputName != "" {
-		f, err := os.Create(outputName)
-		if err != nil {
-			log.Fatal(err)
-		}
-		out = f
-		defer f.Close()
+	out, err := openOutput(c, os.Stdout)
+	if err != nil {
+		log.Fatal(err)
+	}
+	if out != os.Stdout {
+		defer out.Close()
 	}
 	log.Printf("Writing to %q \n", out)
 	csvOut := csv.NewWriter(out)
@@ -97,18 +113,49 @@ func cmdMain(c *cli.Context) (result error) {
 	return nil
 }
 
+func cmdRereckon(c *cli.Context) (result error) {
+	log.Println("TODO(gina)")
+	return nil
+}
+
 func main() {
 	app := cli.NewApp()
 	app.Usage = "Augment ledger"
-	app.Action = cmdMain
-	app.Flags = []cli.Flag{
-		cli.StringFlag{
-			Name:  "i, in",
-			Usage: "Name of input file (default: stdin)",
+
+	app.Commands = []cli.Command{
+		{
+			Name: "rereckon",
+			Flags: []cli.Flag{
+				cli.StringFlag{
+					Name:  "i, in",
+					Usage: "Name of input file (default: stdin)",
+				},
+				cli.StringFlag{
+					Name:  "o, out",
+					Usage: "Name of output file (default: stdout)",
+				},
+				cli.StringFlag{
+					Name:  "c, config",
+					Usage: "Name of yaml configuration file (required)",
+				},
+			},
+			Usage:  "Post-process a reckon file",
+			Action: cmdRereckon,
 		},
-		cli.StringFlag{
-			Name:  "o, out",
-			Usage: "Name of output file (default: stdout)",
+		{
+			Name: "print",
+			Flags: []cli.Flag{
+				cli.StringFlag{
+					Name:  "i, in",
+					Usage: "Name of input file (default: stdin)",
+				},
+				cli.StringFlag{
+					Name:  "o, out",
+					Usage: "Name of output file (default: stdout)",
+				},
+			},
+			Usage:  "Read a reckon file and print it",
+			Action: cmdPrint,
 		},
 	}
 	app.Run(os.Args)
