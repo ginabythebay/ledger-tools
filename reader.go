@@ -112,8 +112,6 @@ func cmdPrint(c *cli.Context) (result error) {
 }
 
 func cmdRereckon(c *cli.Context) (result error) {
-
-	log.Println("TODO(gina)")
 	return nil
 }
 
