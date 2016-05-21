@@ -7,7 +7,7 @@ import (
 	"gopkg.in/yaml.v2"
 )
 
-// Match describes a comment substring match and the associated
+// Replace describes a comment substring match and the associated
 // transformations if the transaction matches.
 type Replace struct {
 	// Treat it as a match if we see this as a substring in a comment
