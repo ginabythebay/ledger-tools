@@ -7,8 +7,8 @@ import (
 	"log"
 	"os"
 
-	"github.com/codegangsta/cli"
 	"github.com/ginabythebay/ledger-tools/parser"
+	"github.com/urfave/cli"
 )
 
 type openStreams struct {

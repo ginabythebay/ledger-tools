@@ -3,10 +3,10 @@
 	"ignore": "test",
 	"package": [
 		{
-			"checksumSHA1": "1GXKdZR/ZUU06jKq5omzUUJ+31A=",
-			"path": "github.com/codegangsta/cli",
-			"revision": "f7b459e3463391ed8bd9cf1515d0d27ccf835efb",
-			"revisionTime": "2016-05-10T17:56:23Z"
+			"checksumSHA1": "aoWugOOuw3EkP0qX0S9+xhDFjgg=",
+			"path": "github.com/urfave/cli",
+			"revision": "c723b19a84af34d905773672ffa1b8ead802e505",
+			"revisionTime": "2016-09-05T11:50:38Z"
 		},
 		{
 			"checksumSHA1": "+OgOXBoiQ+X+C2dsAeiOHwBIEH0=",
