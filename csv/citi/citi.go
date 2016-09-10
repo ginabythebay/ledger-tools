@@ -15,30 +15,10 @@ const (
 // Mutators returns the operations we want to perform on citibank csv files.
 func Mutators() []ops.Mutator {
 	return []ops.Mutator{
-		citiHeader,
+		ops.ReplaceHeader(citiHeaders),
 		ops.StripNewlines,
-		citiCreditToAmount,
-		citiDollarAmount,
-		citiStripCommandsFromAmount,
+		ops.MoveAndNegateIfPresent(citiCredit, citiAmount),
+		ops.EnsureDollars(citiAmount),
+		ops.StripCommas(citiAmount),
 	}
-}
-
-func citiHeader(l *ops.Line) error {
-	l.ReplaceHeader(citiHeaders)
-	return nil
-}
-
-func citiCreditToAmount(l *ops.Line) error {
-	l.MoveAndNegateIfPresent(citiCredit, citiAmount)
-	return nil
-}
-
-func citiDollarAmount(l *ops.Line) error {
-	l.EnsureDollars(citiAmount)
-	return nil
-}
-
-func citiStripCommandsFromAmount(l *ops.Line) error {
-	l.StripCommas(citiAmount)
-	return nil
 }

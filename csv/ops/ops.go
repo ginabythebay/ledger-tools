@@ -27,46 +27,60 @@ func NewLine(lineNo int, record []string) *Line {
 	return &Line{lineNo, record}
 }
 
-func (l *Line) ReplaceHeader(header []string) {
-	if l.LineNo == 1 {
-		l.Record = header
-	}
-}
-
-func (l *Line) MoveAndNegateIfPresent(from int, to int) {
-	if l.LineNo != 1 {
-		value := l.Record[from]
-		if value != "" {
-			l.Record[to] = negate(value)
-			l.Record[from] = ""
+func ReplaceHeader(header []string) Mutator {
+	return func(l *Line) error {
+		if l.LineNo == 1 {
+			l.Record = header
 		}
+		return nil
 	}
 }
 
-func (l *Line) Negate(i int) {
-	if l.LineNo != 1 {
-		value := l.Record[i]
-		l.Record[i] = negate(value)
-	}
-}
-
-func (l *Line) EnsureDollars(i int) {
-	if l.LineNo != 1 {
-		value := l.Record[i]
-		if value != "" && (!strings.HasPrefix(value, "$")) {
-			l.Record[i] = "$" + value
+func MoveAndNegateIfPresent(from int, to int) Mutator {
+	return func(l *Line) error {
+		if l.LineNo != 1 {
+			value := l.Record[from]
+			if value != "" {
+				l.Record[to] = negate(value)
+				l.Record[from] = ""
+			}
 		}
+		return nil
 	}
 }
 
-func (l *Line) StripCommas(i int) error {
-	if l.LineNo != 1 {
-		value := l.Record[i]
-		if strings.Contains(value, ",") {
-			l.Record[i] = strings.Replace(value, ",", "", -1)
+func Negate(i int) Mutator {
+	return func(l *Line) error {
+		if l.LineNo != 1 {
+			value := l.Record[i]
+			l.Record[i] = negate(value)
 		}
+		return nil
 	}
-	return nil
+}
+
+func EnsureDollars(i int) Mutator {
+	return func(l *Line) error {
+		if l.LineNo != 1 {
+			value := l.Record[i]
+			if value != "" && (!strings.HasPrefix(value, "$")) {
+				l.Record[i] = "$" + value
+			}
+		}
+		return nil
+	}
+}
+
+func StripCommas(i int) Mutator {
+	return func(l *Line) error {
+		if l.LineNo != 1 {
+			value := l.Record[i]
+			if strings.Contains(value, ",") {
+				l.Record[i] = strings.Replace(value, ",", "", -1)
+			}
+		}
+		return nil
+	}
 }
 
 func StripNewlines(l *Line) error {
