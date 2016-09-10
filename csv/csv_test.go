@@ -74,9 +74,7 @@ type testCase struct {
 func (c testCase) testFunc(t *testing.T) {
 	var buf bytes.Buffer
 	actLineCnt, err := Process(c.mutators, strings.NewReader(c.input), &buf)
-	if err != nil {
-		t.Error(err)
-	}
+	ok(t, err)
 	actual := buf.String()
 	equals(t, c.expected, actual)
 	equals(t, strings.Count(c.expected, "\n"), actLineCnt)
