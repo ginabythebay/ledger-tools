@@ -158,7 +158,6 @@ func cmdCsv(c *cli.Context) (result error) {
 	if err != nil {
 		log.Fatal(err)
 	}
-
 	if o != os.Stdout {
 		fmt.Printf("Wrote %d lines to %s", cnt, o.Name())
 	}

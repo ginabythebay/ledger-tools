@@ -38,5 +38,8 @@ func Process(mutators []ops.Mutator, reader io.Reader, writer io.Writer) (cnt in
 
 	}
 	w.Flush()
+	if err = w.Error(); err != nil {
+		return 0, err
+	}
 	return lineNo, nil
 }
