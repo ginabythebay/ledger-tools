@@ -16,9 +16,10 @@ const (
 func Mutators() []ops.Mutator {
 	return []ops.Mutator{
 		citiHeader,
+		ops.StripNewlines,
 		citiCreditToAmount,
 		citiDollarAmount,
-		ops.StripNewlines,
+		citiStripCommandsFromAmount,
 	}
 }
 
@@ -34,5 +35,10 @@ func citiCreditToAmount(l *ops.Line) error {
 
 func citiDollarAmount(l *ops.Line) error {
 	l.EnsureDollars(citiAmount)
+	return nil
+}
+
+func citiStripCommandsFromAmount(l *ops.Line) error {
+	l.StripCommas(citiAmount)
 	return nil
 }

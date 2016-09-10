@@ -51,7 +51,7 @@ func equals(tb testing.TB, exp, act interface{}) {
 var citiInput = strings.TrimSpace(`
 "Status","Date","Description","Debit","Credit"
 "Cleared","07/27/2016","GITHUB.COM  2IK4B        415-448-6673 CA
-","1.01",""
+","1,000.01",""
 "Cleared","08/09/2016","NORDSTROM #0427          SAN FRANCISCOCA
 ","","2.02"
 "Cleared","08/25/2016","INTEREST CHARGED TO STANDARD PURCH      
@@ -59,7 +59,7 @@ var citiInput = strings.TrimSpace(`
 `)
 
 const citiExpected = `cleared,date,payee,amount,credit
-Cleared,07/27/2016,GITHUB.COM  2IK4B        415-448-6673 CA,$1.01,
+Cleared,07/27/2016,GITHUB.COM  2IK4B        415-448-6673 CA,$1000.01,
 Cleared,08/09/2016,NORDSTROM #0427          SAN FRANCISCOCA,$-2.02,
 Cleared,08/25/2016,INTEREST CHARGED TO STANDARD PURCH      ,$3.03,
 `

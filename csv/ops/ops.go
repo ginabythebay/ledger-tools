@@ -59,6 +59,16 @@ func (l *Line) EnsureDollars(i int) {
 	}
 }
 
+func (l *Line) StripCommas(i int) error {
+	if l.LineNo != 1 {
+		value := l.Record[i]
+		if strings.Contains(value, ",") {
+			l.Record[i] = strings.Replace(value, ",", "", -1)
+		}
+	}
+	return nil
+}
+
 func StripNewlines(l *Line) error {
 	for i, c := range l.Record {
 		if strings.Contains(c, "\n") {
