@@ -17,7 +17,6 @@ func Mutators() []ops.Mutator {
 	return []ops.Mutator{
 		citiHeader,
 		citiCreditToAmount,
-		citiNegateAmount,
 		citiDollarAmount,
 		ops.StripNewlines,
 	}
@@ -30,11 +29,6 @@ func citiHeader(l *ops.Line) error {
 
 func citiCreditToAmount(l *ops.Line) error {
 	l.MoveAndNegateIfPresent(citiCredit, citiAmount)
-	return nil
-}
-
-func citiNegateAmount(l *ops.Line) error {
-	l.Negate(citiAmount)
 	return nil
 }
 
