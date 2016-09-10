@@ -6,10 +6,25 @@ import (
 	"io"
 	"log"
 	"os"
+	"strings"
 
+	"github.com/ginabythebay/ledger-tools/csv"
+	"github.com/ginabythebay/ledger-tools/csv/citi"
+	"github.com/ginabythebay/ledger-tools/csv/ops"
 	"github.com/ginabythebay/ledger-tools/parser"
 	"github.com/urfave/cli"
 )
+
+var csvTypes = map[string][]ops.Mutator{
+	"citi": citi.Mutators(),
+}
+var typeNames []string
+
+func init() {
+	for name := range csvTypes {
+		typeNames = append(typeNames, name)
+	}
+}
 
 type openStreams struct {
 	all []io.Closer
@@ -111,7 +126,43 @@ func cmdPrint(c *cli.Context) (result error) {
 	return nil
 }
 
-func cmdRereckon(c *cli.Context) (result error) {
+func cmdCsv(c *cli.Context) (result error) {
+	if c.String("type") == "" {
+		log.Fatalf("You must set the -type flag.  Valid values are [%s]", strings.Join(typeNames, ", "))
+	}
+	mutators := csvTypes[c.String("type")]
+	if mutators == nil {
+		log.Fatalf("Unexpected csv type %q.  Valid types are [%s]", c.String("type"), strings.Join(typeNames, ", "))
+	}
+
+	streams := openStreams{}
+	defer streams.Close()
+
+	in, err := openInput(c.String("in"), os.Stdin)
+	if err != nil {
+		log.Fatal(err)
+	}
+	if in != os.Stdin {
+		streams.add(in)
+	}
+
+	o, err := openOutput(c.String("out"), os.Stdout)
+	if err != nil {
+		log.Fatal(err)
+	}
+	if o != os.Stdout {
+		streams.add(o)
+	}
+
+	cnt, err := csv.Process(mutators, in, o)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	if o != os.Stdout {
+		fmt.Printf("Wrote %d lines to %s", cnt, o.Name())
+	}
+
 	return nil
 }
 
@@ -121,7 +172,7 @@ func main() {
 
 	app.Commands = []cli.Command{
 		{
-			Name: "rereckon",
+			Name: "csv",
 			Flags: []cli.Flag{
 				cli.StringFlag{
 					Name:  "i, in",
@@ -132,12 +183,12 @@ func main() {
 					Usage: "Name of output file (default: stdout)",
 				},
 				cli.StringFlag{
-					Name:  "c, config",
-					Usage: "Name of yaml configuration file (required)",
+					Name:  "t, type",
+					Usage: fmt.Sprintf("Type of file we are processing.  Must be one of [%s]]", strings.Join(typeNames, ", ")),
 				},
 			},
-			Usage:  "Post-process a reckon file",
-			Action: cmdRereckon,
+			Usage:  "Process a csv file, making it ready for ledger convert",
+			Action: cmdCsv,
 		},
 		{
 			Name: "print",
