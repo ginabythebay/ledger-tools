@@ -12,6 +12,7 @@ import (
 	"github.com/ginabythebay/ledger-tools/csv/citi"
 	"github.com/ginabythebay/ledger-tools/csv/ops"
 	"github.com/ginabythebay/ledger-tools/csv/sffire"
+	"github.com/ginabythebay/ledger-tools/csv/techcu"
 	"github.com/ginabythebay/ledger-tools/parser"
 	"github.com/urfave/cli"
 )
@@ -19,6 +20,7 @@ import (
 var csvTypes = map[string][]ops.Mutator{
 	"citi":   citi.Mutators(),
 	"sffire": sffire.Mutators(),
+	"techcu": techcu.Mutators(),
 }
 var typeNames []string
 

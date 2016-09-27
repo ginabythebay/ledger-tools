@@ -59,6 +59,21 @@ func Negate(i int) Mutator {
 	}
 }
 
+func DeparenNegatives(i int) Mutator {
+	return func(l *Line) error {
+		if l.LineNo != 1 {
+			value := l.Record[i]
+			if strings.HasPrefix(value, "(") && strings.HasSuffix(value, ")") {
+				value = strings.TrimPrefix(value, "(")
+				value = strings.TrimSuffix(value, ")")
+				value = negate(value)
+				l.Record[i] = value
+			}
+		}
+		return nil
+	}
+}
+
 func EnsureDollars(i int) Mutator {
 	return func(l *Line) error {
 		if l.LineNo != 1 {
