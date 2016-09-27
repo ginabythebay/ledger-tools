@@ -11,12 +11,14 @@ import (
 	"github.com/ginabythebay/ledger-tools/csv"
 	"github.com/ginabythebay/ledger-tools/csv/citi"
 	"github.com/ginabythebay/ledger-tools/csv/ops"
+	"github.com/ginabythebay/ledger-tools/csv/sffire"
 	"github.com/ginabythebay/ledger-tools/parser"
 	"github.com/urfave/cli"
 )
 
 var csvTypes = map[string][]ops.Mutator{
-	"citi": citi.Mutators(),
+	"citi":   citi.Mutators(),
+	"sffire": sffire.Mutators(),
 }
 var typeNames []string
 
@@ -159,7 +161,7 @@ func cmdCsv(c *cli.Context) (result error) {
 		log.Fatal(err)
 	}
 	if o != os.Stdout {
-		fmt.Printf("Wrote %d lines to %s", cnt, o.Name())
+		fmt.Printf("Wrote %d lines to %s\n", cnt, o.Name())
 	}
 
 	return nil

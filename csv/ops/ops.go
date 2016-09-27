@@ -83,6 +83,15 @@ func StripCommas(i int) Mutator {
 	}
 }
 
+func StripSuffix(i int, suffix string) Mutator {
+	return func(l *Line) error {
+		if l.LineNo != 1 {
+			l.Record[i] = strings.TrimSuffix(l.Record[i], suffix)
+		}
+		return nil
+	}
+}
+
 func StripNewlines(l *Line) error {
 	for i, c := range l.Record {
 		if strings.Contains(c, "\n") {
