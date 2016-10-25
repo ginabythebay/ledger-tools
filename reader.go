@@ -13,6 +13,7 @@ import (
 	"github.com/ginabythebay/ledger-tools/csv/ops"
 	"github.com/ginabythebay/ledger-tools/csv/sffire"
 	"github.com/ginabythebay/ledger-tools/csv/techcu"
+	"github.com/ginabythebay/ledger-tools/gmail"
 	"github.com/ginabythebay/ledger-tools/parser"
 	"github.com/urfave/cli"
 )
@@ -130,6 +131,23 @@ func cmdPrint(c *cli.Context) (result error) {
 	return nil
 }
 
+func cmdGmail(c *cli.Context) (result error) {
+	gm, err := gmail.GetService()
+	if err != nil {
+		log.Fatalf("Get Gamil Service %+v", err)
+	}
+	labels, err := gm.LabelNames()
+	if err != nil {
+		log.Fatalf("Get Gamil Service %+v", err)
+	}
+	fmt.Println("Hello gmail world.  Labels are:")
+	for _, l := range labels {
+		fmt.Printf("   %s\n", l)
+	}
+
+	return nil
+}
+
 func cmdCsv(c *cli.Context) (result error) {
 	if c.String("type") == "" {
 		log.Fatalf("You must set the -type flag.  Valid values are [%s]", strings.Join(typeNames, ", "))
@@ -192,6 +210,11 @@ func main() {
 			},
 			Usage:  "Process a csv file, making it ready for ledger convert",
 			Action: cmdCsv,
+		},
+		{
+			Name:   "gmail",
+			Usage:  "Process gmail",
+			Action: cmdGmail,
 		},
 		{
 			Name: "print",
