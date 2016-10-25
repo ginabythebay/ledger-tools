@@ -136,13 +136,18 @@ func cmdGmail(c *cli.Context) (result error) {
 	if err != nil {
 		log.Fatalf("Get Gamil Service %+v", err)
 	}
-	labels, err := gm.LabelNames()
+	msgs, err := gm.LyftMessages()
 	if err != nil {
-		log.Fatalf("Get Gamil Service %+v", err)
+		log.Fatalf("Get snippets %+v", err)
 	}
-	fmt.Println("Hello gmail world.  Labels are:")
-	for _, l := range labels {
-		fmt.Printf("   %s\n", l)
+	fmt.Println("Hello gmail world.  Lyft subjects are:")
+	for _, m := range msgs {
+		fmt.Println()
+		fmt.Println()
+		fmt.Printf("  *************************\n")
+		fmt.Printf("  %s\n", m.Subject)
+		fmt.Printf("  *************************\n")
+		fmt.Printf(m.TextPlain)
 	}
 
 	return nil
