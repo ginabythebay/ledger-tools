@@ -10,6 +10,7 @@ import (
 	"os"
 	"os/user"
 	"path"
+	"strings"
 
 	"github.com/pkg/errors"
 
@@ -54,22 +55,9 @@ func GetService() (*Gmail, error) {
 	return &Gmail{srv}, nil
 }
 
-// LabelNames returns the names of known labels.
-func (gm *Gmail) LabelNames() ([]string, error) {
-	r, err := gm.svc.Users.Labels.List(me).Do()
-	if err != nil {
-		return nil, errors.Wrap(err, "Labels List")
-	}
-
-	var result []string
-	for _, l := range r.Labels {
-		result = append(result, l.Name)
-	}
-	return result, nil
-}
-
 // Message represents a single email message
 type Message struct {
+	Date      string
 	To        string
 	From      string
 	Subject   string
@@ -77,10 +65,12 @@ type Message struct {
 }
 
 func decode(msg *gmail.Message) Message {
-	var to, from, subject string
+	var date, to, from, subject string
 	payload := msg.Payload
 	for _, h := range payload.Headers {
 		switch h.Name {
+		case "Date":
+			date = h.Value
 		case "To":
 			to = h.Value
 		case "From":
@@ -89,28 +79,64 @@ func decode(msg *gmail.Message) Message {
 			subject = h.Value
 		}
 	}
-	textPlain := getTextPlain(payload)
-	return Message{to, from, subject, textPlain}
+	textPlain := findBody(payload, "text/plain")
+	return Message{date, to, from, subject, textPlain}
 }
 
-func headerValue(name string, headers []*gmail.MessagePartHeader) string {
-	for _, h := range headers {
-		if h.Name == name {
-			return h.Value
-		}
-	}
-	return ""
-}
-
-func getTextPlain(part *gmail.MessagePart) string {
-	if part.MimeType == "text/plain" && headerValue("Content-Transfer-Encoding", part.Headers) == "quoted-printable" {
+func findBody(part *gmail.MessagePart, mimeType string) string {
+	if part.MimeType == mimeType {
 		b, _ := base64.StdEncoding.DecodeString(part.Body.Data)
 		return string(b)
 	}
 	for _, child := range part.Parts {
-		return getTextPlain(child)
+		return findBody(child, mimeType)
 	}
 	return ""
+}
+
+type messageList struct {
+	ids           []string
+	nextPageToken string
+}
+
+func (gm *Gmail) queryPage(query string, nextPageToken string) (*messageList, error) {
+	queryCall := gm.svc.Users.Messages.List(me).Q(query)
+	if nextPageToken != "" {
+		queryCall.PageToken(nextPageToken)
+	}
+	r, err := queryCall.Do()
+	if err != nil {
+		return nil, errors.Wrapf(err, "query %q, %q", query, nextPageToken)
+	}
+	var ids []string
+	for _, msg := range r.Messages {
+		ids = append(ids, msg.Id)
+	}
+	return &messageList{ids, r.NextPageToken}, nil
+}
+
+// QueryOption represents an option we can use to modify a query for messages.
+type QueryOption func() string
+
+// QuerySubject allows us to query for words in a subject.
+func QuerySubject(subject string) QueryOption {
+	return func() string {
+		return fmt.Sprintf(`subject:"%s"`, subject)
+	}
+}
+
+// QueryFrom allows us to query for a from email address.
+func QueryFrom(from string) QueryOption {
+	return func() string {
+		return fmt.Sprintf("from:%s", from)
+	}
+}
+
+// QueryNewerThan lets us query for message newer than days.
+func QueryNewerThan(days int) QueryOption {
+	return func() string {
+		return fmt.Sprintf("newer_than:%dd", days)
+	}
 }
 
 func dump(v interface{}) {
@@ -122,24 +148,34 @@ func dump(v interface{}) {
 	os.Exit(1)
 }
 
-func (gm *Gmail) LyftMessages() ([]Message, error) {
-	r, err := gm.svc.Users.Messages.
-		List(me).
-		Q(`subject:"Your ride with" from:no-reply@lyftmail.com newer_than:30d`).
-		Do()
-	if err != nil {
-		return nil, errors.Wrap(err, "Messages List")
+// QueryMessages applies the opts to do a query and returns the
+// matching messages.
+func (gm *Gmail) QueryMessages(opts ...QueryOption) ([]Message, error) {
+	var tokens []string
+	for _, o := range opts {
+		tokens = append(tokens, o())
 	}
-	// TODO(gina) handle paging
+	query := strings.Join(tokens, " ")
 
-	result := make([]Message, len(r.Messages), len(r.Messages))
-	for i, m := range r.Messages {
-		msg, err := gm.svc.Users.Messages.Get(me, m.Id).Do()
+	var result []Message
+	var nextPageToken string
+	for {
+		page, err := gm.queryPage(query, nextPageToken)
 		if err != nil {
-			return nil, errors.Wrapf(err, "Getting msg %q", m.Id)
+			return nil, errors.Wrap(err, "query page")
 		}
+		for _, id := range page.ids {
+			msg, err := gm.svc.Users.Messages.Get(me, id).Do()
+			if err != nil {
+				return nil, errors.Wrapf(err, "Getting msg %q", id)
+			}
 
-		result[i] = decode(msg)
+			result = append(result, decode(msg))
+		}
+		nextPageToken = page.nextPageToken
+		if nextPageToken == "" {
+			break
+		}
 	}
 	return result, nil
 }

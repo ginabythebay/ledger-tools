@@ -136,7 +136,11 @@ func cmdGmail(c *cli.Context) (result error) {
 	if err != nil {
 		log.Fatalf("Get Gamil Service %+v", err)
 	}
-	msgs, err := gm.LyftMessages()
+	msgs, err := gm.QueryMessages(
+		gmail.QueryFrom("no-reply@lyftmail.com"),
+		gmail.QuerySubject("Your ride with"),
+		gmail.QueryNewerThan(30),
+	)
 	if err != nil {
 		log.Fatalf("Get snippets %+v", err)
 	}
@@ -145,6 +149,7 @@ func cmdGmail(c *cli.Context) (result error) {
 		fmt.Println()
 		fmt.Println()
 		fmt.Printf("  *************************\n")
+		fmt.Printf("  %s\n", m.Date)
 		fmt.Printf("  %s\n", m.Subject)
 		fmt.Printf("  *************************\n")
 		fmt.Printf(m.TextPlain)
