@@ -5,9 +5,13 @@ import (
 	yaml "gopkg.in/yaml.v2"
 )
 
-type Input struct {
+type input struct {
 	Key   string
 	Value string
+}
+
+func Input(key, value string) input {
+	return input{key, value}
 }
 
 type Result map[string]string
@@ -68,11 +72,11 @@ func From(config []byte, validInputs, validOutputs []string) (*RuleSet, error) {
 	return &RuleSet{allMappings}, nil
 }
 
-func (rs *RuleSet) Apply(inputs ...Input) Result {
+func (rs *RuleSet) Apply(allInputs ...input) Result {
 	result := map[string]string{}
 
 	for _, m := range rs.allMappings {
-		if m.matches(inputs) {
+		if m.matches(allInputs) {
 			if _, have := result[m.outputKey]; !have {
 				result[m.outputKey] = m.outputValue
 			}
@@ -98,8 +102,8 @@ type matcher struct {
 	value string
 }
 
-func (m matcher) matches(inputs []Input) bool {
-	for _, i := range inputs {
+func (m matcher) matches(allInputs []input) bool {
+	for _, i := range allInputs {
 		if i.Key == m.key && i.Value == m.value {
 			return true
 		}

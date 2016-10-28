@@ -31,8 +31,8 @@ func TestScenario(t *testing.T) {
 		[]string{"PaymentAccount", "CostAccount"})
 	ok(t, err)
 
-	result := r.Apply(Input{"Payee", "Lyft"},
-		Input{"Instrument", "Visa ***1234"})
+	result := r.Apply(Input("Payee", "Lyft"),
+		Input("Instrument", "Visa ***1234"))
 	equals(t, "Liabilities:Citi Visa", result.Get("PaymentAccount"))
 	equals(t, "Expenses:Transit:Ride Share", result.Get("CostAccount"))
 }

@@ -14,6 +14,7 @@ import (
 	"github.com/ginabythebay/ledger-tools/csv/sffire"
 	"github.com/ginabythebay/ledger-tools/csv/techcu"
 	"github.com/ginabythebay/ledger-tools/gmail"
+	"github.com/ginabythebay/ledger-tools/importer/lyft"
 	"github.com/ginabythebay/ledger-tools/parser"
 	"github.com/urfave/cli"
 )
@@ -137,8 +138,8 @@ func cmdGmail(c *cli.Context) (result error) {
 		log.Fatalf("Get Gamil Service %+v", err)
 	}
 	msgs, err := gm.QueryMessages(
-		gmail.QueryFrom("no-reply@lyftmail.com"),
-		gmail.QuerySubject("Your ride with"),
+		gmail.QueryFrom(lyft.From),
+		gmail.QuerySubject(lyft.SubjectPrefix),
 		gmail.QueryNewerThan(30),
 	)
 	if err != nil {

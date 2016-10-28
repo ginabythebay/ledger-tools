@@ -14,6 +14,8 @@ import (
 
 	"github.com/pkg/errors"
 
+	ledgertools "github.com/ginabythebay/ledger-tools"
+
 	"golang.org/x/oauth2/google"
 	gmail "google.golang.org/api/gmail/v1"
 )
@@ -55,16 +57,7 @@ func GetService() (*Gmail, error) {
 	return &Gmail{srv}, nil
 }
 
-// Message represents a single email message
-type Message struct {
-	Date      string
-	To        string
-	From      string
-	Subject   string
-	TextPlain string
-}
-
-func decode(msg *gmail.Message) Message {
+func decode(msg *gmail.Message) ledgertools.Message {
 	var date, to, from, subject string
 	payload := msg.Payload
 	for _, h := range payload.Headers {
@@ -80,7 +73,7 @@ func decode(msg *gmail.Message) Message {
 		}
 	}
 	textPlain := findBody(payload, "text/plain")
-	return Message{date, to, from, subject, textPlain}
+	return ledgertools.Message{date, to, from, subject, textPlain}
 }
 
 func findBody(part *gmail.MessagePart, mimeType string) string {
@@ -150,14 +143,14 @@ func dump(v interface{}) {
 
 // QueryMessages applies the opts to do a query and returns the
 // matching messages.
-func (gm *Gmail) QueryMessages(opts ...QueryOption) ([]Message, error) {
+func (gm *Gmail) QueryMessages(opts ...QueryOption) ([]ledgertools.Message, error) {
 	var tokens []string
 	for _, o := range opts {
 		tokens = append(tokens, o())
 	}
 	query := strings.Join(tokens, " ")
 
-	var result []Message
+	var result []ledgertools.Message
 	var nextPageToken string
 	for {
 		page, err := gm.queryPage(query, nextPageToken)
