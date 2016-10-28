@@ -13,7 +13,8 @@ import (
 
 const (
 	// From is the email address we expect to get ride summaries from
-	From = "no-reply@lyftmail.com"
+	From        = "no-reply@lyftmail.com"
+	fromMatcher = "<" + From + ">"
 
 	// SubjectPrefix is the common prefix we see in ride summary subjects
 	SubjectPrefix = "Your ride with"
@@ -28,11 +29,11 @@ var (
 
 // We expect to find lines starting with these and will import those
 // lines as comments.
-var commentPrefixes = []string{
-	"Ride completed on",
-	"Your Driver was",
-	"Pickup:",
-	"Dropoff:",
+var commentRes = []*regexp.Regexp{
+	regexp.MustCompile("^(Ride|Line) completed on *"),
+	regexp.MustCompile("^Your Driver was .*"),
+	regexp.MustCompile("^Pickup: .*"),
+	regexp.MustCompile("^Dropoff: "),
 }
 
 const payee = "Lyft"
@@ -72,7 +73,7 @@ func init() {
 //   To learn more about our Zero Tolerance Policies, go to http://email.lyftmai=
 //   l.com/somethirdurl
 func ImportMessage(msg ledgertools.Message) (*importer.Parsed, error) {
-	if msg.From != From {
+	if !strings.Contains(msg.From, fromMatcher) {
 		return nil, nil
 	}
 	if !strings.HasPrefix(msg.Subject, SubjectPrefix) {
@@ -92,21 +93,21 @@ func ImportMessage(msg ledgertools.Message) (*importer.Parsed, error) {
 	var instrument string
 
 	for _, line := range strings.Split(msg.TextPlain, "\n") {
-		for _, c := range commentPrefixes {
-			if strings.HasPrefix(line, c) {
+		for _, re := range commentRes {
+			if re.MatchString(line) {
 				comments = append(comments, line)
 				continue
 			}
 		}
 
 		if match := receiptRe.FindStringSubmatch(line); match != nil {
-			checkNumber = match[1]
+			checkNumber = strings.TrimSpace(match[1])
 			continue
 		}
 
 		if match := chargeRe.FindStringSubmatch(line); match != nil {
-			instrument = match[1]
-			amount = match[2]
+			instrument = strings.TrimSpace(match[1])
+			amount = strings.TrimSpace(match[2])
 			continue
 		}
 	}
@@ -115,8 +116,8 @@ func ImportMessage(msg ledgertools.Message) (*importer.Parsed, error) {
 	if checkNumber == "" {
 		return nil, errors.Errorf("Missing valid receipt line in %q", msg.TextPlain)
 	}
-	if len(comments) != len(commentPrefixes) {
-		return nil, errors.Errorf("Missing comments.  Found %q in %q.  Expected to find lines starting with %q", comments, msg.TextPlain, commentPrefixes)
+	if len(comments) != len(commentRes) {
+		return nil, errors.Errorf("Missing comments.  Found %q in %q.  Expected to find lines starting with %q", comments, msg.TextPlain, commentRes)
 	}
 	if amount == "" || instrument == "" {
 		return nil, errors.Errorf("charge line in %q", msg.TextPlain)

@@ -4,8 +4,11 @@ import (
 	"bufio"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"log"
 	"os"
+	"os/user"
+	"path/filepath"
 	"strings"
 
 	"github.com/ginabythebay/ledger-tools/csv"
@@ -14,8 +17,10 @@ import (
 	"github.com/ginabythebay/ledger-tools/csv/sffire"
 	"github.com/ginabythebay/ledger-tools/csv/techcu"
 	"github.com/ginabythebay/ledger-tools/gmail"
+	"github.com/ginabythebay/ledger-tools/importer"
 	"github.com/ginabythebay/ledger-tools/importer/lyft"
 	"github.com/ginabythebay/ledger-tools/parser"
+	"github.com/pkg/errors"
 	"github.com/urfave/cli"
 )
 
@@ -133,6 +138,11 @@ func cmdPrint(c *cli.Context) (result error) {
 }
 
 func cmdGmail(c *cli.Context) (result error) {
+	imp, err := msgImporter()
+	if err != nil {
+		log.Fatalf("Get msg importer %+v", err)
+	}
+
 	gm, err := gmail.GetService()
 	if err != nil {
 		log.Fatalf("Get Gamil Service %+v", err)
@@ -143,20 +153,42 @@ func cmdGmail(c *cli.Context) (result error) {
 		gmail.QueryNewerThan(30),
 	)
 	if err != nil {
-		log.Fatalf("Get snippets %+v", err)
+		log.Fatalf("Get mail %+v", err)
 	}
-	fmt.Println("Hello gmail world.  Lyft subjects are:")
-	for _, m := range msgs {
-		fmt.Println()
-		fmt.Println()
-		fmt.Printf("  *************************\n")
-		fmt.Printf("  %s\n", m.Date)
-		fmt.Printf("  %s\n", m.Subject)
-		fmt.Printf("  *************************\n")
-		fmt.Printf(m.TextPlain)
+
+	for i, m := range msgs {
+		xact, err := imp.ImportMessage(m)
+		if err != nil {
+			log.Fatalf("Unable to import %#v\n %+v", m, err)
+		}
+		if xact == nil {
+			log.Fatalf("Unable to recognize %#v", m)
+		}
+		if i != 0 {
+			fmt.Println()
+		}
+		fmt.Println(xact.String())
 	}
 
 	return nil
+}
+
+func msgImporter() (*importer.MsgImporter, error) {
+	config, err := readRuleConfig()
+	if err != nil {
+		return nil, errors.Wrap(err, "readRuleConfig")
+	}
+	allParsers := []importer.Parser{lyft.ImportMessage}
+	return importer.NewMsgImporter(config, allParsers)
+}
+
+func readRuleConfig() ([]byte, error) {
+	usr, err := user.Current()
+	if err != nil {
+		return nil, errors.Wrap(err, "get user")
+	}
+	ruleFileName := filepath.Join(usr.HomeDir, ".config", "ledger-tools", "rules.yaml")
+	return ioutil.ReadFile(ruleFileName)
 }
 
 func cmdCsv(c *cli.Context) (result error) {

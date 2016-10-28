@@ -40,7 +40,7 @@ l.com/somethirdurl
 var happyMsg = ledgertools.NewMessage(
 	"Fri, 21 Oct 2016 14:23:49 +0000",
 	"client@somehost.com",
-	From,
+	fromMatcher,
 	"Your ride with Jane",
 	happyEmail)
 
