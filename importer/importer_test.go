@@ -15,7 +15,7 @@ func TestTransactionString(t *testing.T) {
 	ok(t, err)
 	trans := Transaction{
 		when,
-		"#3030",
+		"3030",
 		"Giant Corporation",
 		[]string{"first comment", "second comment"},
 		"$30.00",
@@ -25,7 +25,7 @@ func TestTransactionString(t *testing.T) {
 
 	equals(t,
 		strings.TrimSpace(`
-2016-10-28 (#3030) Giant Corporation
+2016/10/28 (#3030) Giant Corporation
     ; first comment
     ; second comment
     Expenses:Go                                            $30.00
