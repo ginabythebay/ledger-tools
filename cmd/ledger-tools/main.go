@@ -19,6 +19,7 @@ import (
 	"github.com/ginabythebay/ledger-tools/csv/techcu"
 	"github.com/ginabythebay/ledger-tools/gmail"
 	"github.com/ginabythebay/ledger-tools/importer"
+	"github.com/ginabythebay/ledger-tools/importer/amazon"
 	"github.com/ginabythebay/ledger-tools/importer/lyft"
 	"github.com/ginabythebay/ledger-tools/parser"
 	"github.com/pkg/errors"
@@ -31,6 +32,16 @@ var csvTypes = map[string][]ops.Mutator{
 	"techcu": techcu.Mutators(),
 }
 var typeNames []string
+
+// TODO(gina) make it so I don't have to keep these two things in sync
+var allMsgFetchers = []messageFetcher{
+	lyftFetcher,
+	amazonFetcher,
+}
+var allParsers = []importer.Parser{
+	lyft.ImportMessage,
+	amazon.ImportMessage,
+}
 
 func init() {
 	for name := range csvTypes {
@@ -148,25 +159,23 @@ func cmdGmail(c *cli.Context) (result error) {
 	if err != nil {
 		log.Fatalf("Get Gamil Service %+v", err)
 	}
-	msgs, err := gm.QueryMessages(
-		gmail.QueryFrom(lyft.From),
-		gmail.QuerySubject(lyft.SubjectPrefix),
-		gmail.QueryNewerThan(30),
-	)
-	if err != nil {
-		log.Fatalf("Get mail %+v", err)
-	}
-
 	var allTransactions []*ledgertools.Transaction
-	for _, m := range msgs {
-		xact, err := imp.ImportMessage(m)
+
+	for _, mf := range allMsgFetchers {
+		msgs, err := mf(gm, 30)
 		if err != nil {
-			log.Fatalf("Unable to import %#v\n %+v", m, err)
+			log.Fatalf("Get mail %+v", err)
 		}
-		if xact == nil {
-			log.Fatalf("Unable to recognize %#v", m)
+		for _, m := range msgs {
+			xact, err := imp.ImportMessage(m)
+			if err != nil {
+				log.Fatalf("Unable to import %#v\n %+v", m, err)
+			}
+			if xact == nil {
+				log.Fatalf("Unable to recognize %#v", m)
+			}
+			allTransactions = append(allTransactions, xact)
 		}
-		allTransactions = append(allTransactions, xact)
 	}
 
 	ledgertools.SortTransactions(allTransactions)
@@ -180,12 +189,29 @@ func cmdGmail(c *cli.Context) (result error) {
 	return nil
 }
 
+type messageFetcher func(gm *gmail.Gmail, days int) ([]ledgertools.Message, error)
+
+func lyftFetcher(gm *gmail.Gmail, days int) ([]ledgertools.Message, error) {
+	return gm.QueryMessages(
+		gmail.QueryFrom(lyft.From),
+		gmail.QuerySubject(lyft.SubjectPrefix),
+		gmail.QueryNewerThan(days),
+	)
+}
+
+func amazonFetcher(gm *gmail.Gmail, days int) ([]ledgertools.Message, error) {
+	return gm.QueryMessages(
+		gmail.QueryFrom(amazon.From),
+		gmail.QuerySubject(amazon.SubjectPrefix),
+		gmail.QueryNewerThan(days),
+	)
+}
+
 func msgImporter() (*importer.MsgImporter, error) {
 	config, err := readRuleConfig()
 	if err != nil {
 		return nil, errors.Wrap(err, "readRuleConfig")
 	}
-	allParsers := []importer.Parser{lyft.ImportMessage}
 	return importer.NewMsgImporter(config, allParsers)
 }
 

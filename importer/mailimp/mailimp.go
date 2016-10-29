@@ -80,12 +80,17 @@ func (split *LineSplitter) Next() (string, bool) {
 	}
 
 	i := strings.IndexRune(split.remainingText, '\n')
+	var line string
 	if i == -1 {
-		line := split.remainingText
+		line = split.remainingText
 		split.remainingText = ""
-		return line, true
+	} else {
+		line = split.remainingText[:i]
+		split.remainingText = split.remainingText[i+1:]
 	}
-	line := split.remainingText[:i]
-	split.remainingText = split.remainingText[i+1:]
+	for line != "" && line[len(line)-1] == '\r' {
+		line = line[:len(line)-1]
+
+	}
 	return line, true
 }

@@ -39,7 +39,6 @@ var commentMatchers = []mailimp.LineMatcher{
 var commentPrefixes = []string{
 	"Track your package at:",
 	"View or manage your order in Your Orders:",
-	"Your invoice can be accessed here:",
 }
 
 // ImportMessage imports an email message.  Returns nil if msg does
@@ -84,14 +83,6 @@ var commentPrefixes = []string{
 //   Amazon.com
 //
 //   --------------------------------------------------------------------
-//   Unless otherwise noted, items sold by Amazon.com LLC are subject to sales tax in select states in accordance with the applicable laws of that state. If your order contains one or more items from a seller other than Amazon.com LLC, it may be subject to state and local sales tax, depending upon the sellers business policies and the location of their operations. For more tax and seller information, visit: http://www.amazon.com/somesellerlink
-//
-//   Items in this shipment may be subject to California's Electronic Waste Recycling Act. For any items not sold by Amazon.com LLC or Amazon Digital Services, Inc. that are subject to that Act, the seller of that item is responsible for submitting the California Electronic Waste Recycling fees on your behalf.
-//
-//   Your invoice can be accessed here:
-//   https://www.amazon.com/someinvoicelink
-//
-//   This email was sent from a notification-only address that cannot accept incoming email. Please do not reply to this message.
 func ImportMessage(msg ledgertools.Message) (*importer.Parsed, error) {
 	if !strings.Contains(msg.From, fromMatcher) {
 		return nil, nil
