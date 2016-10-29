@@ -1,13 +1,12 @@
 package lyft
 
 import (
-	"fmt"
 	"strings"
 	"time"
-	"unicode"
 
 	ledgertools "github.com/ginabythebay/ledger-tools"
 	"github.com/ginabythebay/ledger-tools/importer"
+	"github.com/ginabythebay/ledger-tools/importer/mailimp"
 	"github.com/pkg/errors"
 )
 
@@ -20,12 +19,10 @@ const (
 	SubjectPrefix = "Your ride with"
 )
 
-var pacificTz *time.Location
+var receiptMatcher = mailimp.PrefixMatcher([]string{"Receipt #"})
+var chargeMatcher = mailimp.PrefixMatcher([]string{"Total charged to "})
 
-var receiptMatcher prefixMatcher = []string{"Receipt #"}
-var chargeMatcher prefixMatcher = []string{"Total charged to "}
-
-var commentMatchers = []prefixMatcher{
+var commentMatchers = []mailimp.PrefixMatcher{
 	{"Ride completed on ", "Line completed on "},
 	{"Your Driver was "},
 	{"Pickup: "},
@@ -33,13 +30,6 @@ var commentMatchers = []prefixMatcher{
 }
 
 const payee = "Lyft"
-
-func init() {
-	var err error
-	if pacificTz, err = time.LoadLocation("America/Los_Angeles"); err != nil {
-		panic(fmt.Sprintf("Loading America/Los_Angeles: %+v", err))
-	}
-}
 
 // ImportMessage imports an email message.  Returns nil if msg does
 // not appear to be a lyft ride summary.  Returns an error if it does
@@ -80,7 +70,7 @@ func ImportMessage(msg ledgertools.Message) (*importer.Parsed, error) {
 	if err != nil {
 		return nil, errors.Wrapf(err, "Parsing date in %v", msg)
 	}
-	date = date.In(pacificTz)
+	date = date.In(mailimp.PacificTz)
 
 	// build all these up by looking at the message text
 	var checkNumber string
@@ -88,25 +78,25 @@ func ImportMessage(msg ledgertools.Message) (*importer.Parsed, error) {
 	var amount string
 	var instrument string
 
-	split := splitter{msg.TextPlain}
+	splitter := mailimp.NewLineSplitter(msg.TextPlain)
 	for {
-		line, ok := split.next()
+		line, ok := splitter.Next()
 		if !ok {
 			break
 		}
 		for _, m := range commentMatchers {
-			if m.match(line) != "" {
+			if m.Match(line) != "" {
 				comments = append(comments, line)
 				continue
 			}
 		}
 
-		if rest := receiptMatcher.match(line); rest != "" {
+		if rest := receiptMatcher.Match(line); rest != "" {
 			checkNumber = rest
 			continue
 		}
 
-		if rest := chargeMatcher.match(line); rest != "" {
+		if rest := chargeMatcher.Match(line); rest != "" {
 			// rest should like like 'Visa ***1234: $20.18'
 			tokens := strings.SplitN(rest, ":", 2)
 			if len(tokens) == 2 {
@@ -135,36 +125,4 @@ func ImportMessage(msg ledgertools.Message) (*importer.Parsed, error) {
 		comments,
 		amount,
 		instrument), nil
-}
-
-type prefixMatcher []string
-
-func (m prefixMatcher) match(line string) string {
-	for _, prefix := range m {
-		if strings.HasPrefix(line, prefix) {
-			return strings.TrimRightFunc(strings.TrimPrefix(line, prefix), unicode.IsSpace)
-		}
-	}
-	return ""
-}
-
-// splits things int lines.
-type splitter struct {
-	remainingText string
-}
-
-func (split *splitter) next() (string, bool) {
-	if len(split.remainingText) == 0 {
-		return "", false
-	}
-
-	i := strings.IndexRune(split.remainingText, '\n')
-	if i == -1 {
-		line := split.remainingText
-		split.remainingText = ""
-		return line, true
-	}
-	line := split.remainingText[:i]
-	split.remainingText = split.remainingText[i+1:]
-	return line, true
 }
