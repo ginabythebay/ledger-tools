@@ -11,6 +11,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	ledgertools "github.com/ginabythebay/ledger-tools"
 	"github.com/ginabythebay/ledger-tools/csv"
 	"github.com/ginabythebay/ledger-tools/csv/citi"
 	"github.com/ginabythebay/ledger-tools/csv/ops"
@@ -156,7 +157,8 @@ func cmdGmail(c *cli.Context) (result error) {
 		log.Fatalf("Get mail %+v", err)
 	}
 
-	for i, m := range msgs {
+	var allTransactions []*ledgertools.Transaction
+	for _, m := range msgs {
 		xact, err := imp.ImportMessage(m)
 		if err != nil {
 			log.Fatalf("Unable to import %#v\n %+v", m, err)
@@ -164,6 +166,11 @@ func cmdGmail(c *cli.Context) (result error) {
 		if xact == nil {
 			log.Fatalf("Unable to recognize %#v", m)
 		}
+		allTransactions = append(allTransactions, xact)
+	}
+
+	ledgertools.SortTransactions(allTransactions)
+	for i, xact := range allTransactions {
 		if i != 0 {
 			fmt.Println()
 		}

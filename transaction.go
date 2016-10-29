@@ -2,6 +2,7 @@ package ledgertools
 
 import (
 	"fmt"
+	"sort"
 	"strings"
 	"time"
 	"unicode/utf8"
@@ -64,4 +65,23 @@ func align(account string, amount string) string {
 		middle = strings.Repeat(" ", delta)
 	}
 	return prefix + middle + suffix
+}
+
+func SortTransactions(transactions []*Transaction) {
+	s := sorter(transactions)
+	sort.Sort(s)
+}
+
+type sorter []*Transaction
+
+func (s sorter) Len() int {
+	return len(s)
+}
+
+func (s sorter) Swap(i, j int) {
+	s[i], s[j] = s[j], s[i]
+}
+
+func (s sorter) Less(i, j int) bool {
+	return s[i].Date.Before(s[j].Date)
 }

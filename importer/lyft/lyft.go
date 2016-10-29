@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strings"
 	"time"
+	"unicode"
 
 	ledgertools "github.com/ginabythebay/ledger-tools"
 	"github.com/ginabythebay/ledger-tools/importer"
@@ -141,7 +142,7 @@ type prefixMatcher []string
 func (m prefixMatcher) match(line string) string {
 	for _, prefix := range m {
 		if strings.HasPrefix(line, prefix) {
-			return strings.TrimPrefix(line, prefix)
+			return strings.TrimRightFunc(strings.TrimPrefix(line, prefix), unicode.IsSpace)
 		}
 	}
 	return ""
