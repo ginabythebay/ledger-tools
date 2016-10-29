@@ -21,17 +21,6 @@ const (
 
 var pacificTz *time.Location
 
-type prefixMatcher []string
-
-func (m prefixMatcher) match(line string) string {
-	for _, prefix := range m {
-		if strings.HasPrefix(line, prefix) {
-			return strings.TrimPrefix(line, prefix)
-		}
-	}
-	return ""
-}
-
 var receiptMatcher prefixMatcher = []string{"Receipt #"}
 var chargeMatcher prefixMatcher = []string{"Total charged to "}
 
@@ -94,11 +83,16 @@ func ImportMessage(msg ledgertools.Message) (*importer.Parsed, error) {
 
 	// build all these up by looking at the message text
 	var checkNumber string
-	var comments []string
+	var comments = make([]string, 0, len(commentMatchers))
 	var amount string
 	var instrument string
 
-	for _, line := range strings.Split(msg.TextPlain, "\n") {
+	split := splitter{msg.TextPlain}
+	for {
+		line, ok := split.next()
+		if !ok {
+			break
+		}
 		for _, m := range commentMatchers {
 			if m.match(line) != "" {
 				comments = append(comments, line)
@@ -140,4 +134,36 @@ func ImportMessage(msg ledgertools.Message) (*importer.Parsed, error) {
 		comments,
 		amount,
 		instrument), nil
+}
+
+type prefixMatcher []string
+
+func (m prefixMatcher) match(line string) string {
+	for _, prefix := range m {
+		if strings.HasPrefix(line, prefix) {
+			return strings.TrimPrefix(line, prefix)
+		}
+	}
+	return ""
+}
+
+// splits things int lines.
+type splitter struct {
+	remainingText string
+}
+
+func (split *splitter) next() (string, bool) {
+	if len(split.remainingText) == 0 {
+		return "", false
+	}
+
+	i := strings.IndexRune(split.remainingText, '\n')
+	if i == -1 {
+		line := split.remainingText
+		split.remainingText = ""
+		return line, true
+	}
+	line := split.remainingText[:i]
+	split.remainingText = split.remainingText[i+1:]
+	return line, true
 }
