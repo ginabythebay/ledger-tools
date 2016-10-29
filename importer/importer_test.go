@@ -8,12 +8,14 @@ import (
 	"strings"
 	"testing"
 	"time"
+
+	ledgertools "github.com/ginabythebay/ledger-tools"
 )
 
 func TestTransactionString(t *testing.T) {
 	when, err := time.Parse("2006-01-02", "2016-10-28")
 	ok(t, err)
-	trans := Transaction{
+	trans := ledgertools.NewTransaction(
 		when,
 		"3030",
 		"Giant Corporation",
@@ -21,7 +23,7 @@ func TestTransactionString(t *testing.T) {
 		"$30.00",
 		"Expenses:Go",
 		"Liabilities:CreditCard",
-	}
+	)
 
 	equals(t,
 		strings.TrimSpace(`

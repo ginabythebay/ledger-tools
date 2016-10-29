@@ -1,18 +1,12 @@
 package importer
 
 import (
-	"fmt"
-	"strings"
 	"time"
-	"unicode/utf8"
 
 	ledgertools "github.com/ginabythebay/ledger-tools"
 	"github.com/ginabythebay/ledger-tools/rules"
 	"github.com/pkg/errors"
 )
-
-const amountAlignmentCol = 65
-const indent = "    "
 
 // Rule inputs
 const (
@@ -51,7 +45,7 @@ func NewMsgImporter(ruleConfig []byte, allParsers []Parser) (*MsgImporter, error
 // ImportMessage imports an email message and produces a Transaction.
 // nil will be returned if the email message is of a type we don't
 // recognize
-func (mi *MsgImporter) ImportMessage(msg ledgertools.Message) (*Transaction, error) {
+func (mi *MsgImporter) ImportMessage(msg ledgertools.Message) (*ledgertools.Transaction, error) {
 
 	var parsed *Parsed
 	var err error
@@ -75,49 +69,6 @@ func (mi *MsgImporter) ImportMessage(msg ledgertools.Message) (*Transaction, err
 	return result, nil
 }
 
-// Transaction is a simple version of a transaction that is capable of
-// represent movement of money between 2 accounts.
-type Transaction struct {
-	Date        time.Time
-	CheckNumber string // may not be set
-	Payee       string
-	Comments    []string // These should not contain the leading ; character
-
-	Amount         string // to apply to CostAccount
-	CostAccount    string
-	PaymentAccount string
-}
-
-func (t Transaction) String() string {
-	var lines []string
-	dateText := t.Date.Format("2006/01/02")
-	var tokens []string
-	if t.CheckNumber == "" {
-		tokens = []string{dateText, t.Payee}
-	} else {
-		tokens = []string{dateText, "(#" + t.CheckNumber + ")", t.Payee}
-	}
-	header := strings.Join(tokens, " ")
-	lines = append(lines, header)
-	for _, c := range t.Comments {
-		lines = append(lines, fmt.Sprintf("%s; %s", indent, c))
-	}
-	lines = append(lines, align(t.CostAccount, t.Amount))
-	lines = append(lines, indent+t.PaymentAccount)
-	return strings.Join(lines, "\n")
-}
-
-func align(account string, amount string) string {
-	prefix := indent + account
-	suffix := "  " + amount
-	delta := amountAlignmentCol - (utf8.RuneCountInString(prefix) + utf8.RuneCountInString(suffix))
-	var middle string
-	if delta > 0 {
-		middle = strings.Repeat(" ", delta)
-	}
-	return prefix + middle + suffix
-}
-
 // Parsed represents parsed data that we can convert to a Transaction with the help of a RuleSet.
 type Parsed struct {
 	Date        time.Time
@@ -134,7 +85,7 @@ func NewParsed(date time.Time, checkNumber, payee string, comments []string, amo
 	return &Parsed{date, checkNumber, payee, comments, amount, paymentInstrument}
 }
 
-func (p Parsed) transaction(rs *rules.RuleSet) (*Transaction, error) {
+func (p Parsed) transaction(rs *rules.RuleSet) (*ledgertools.Transaction, error) {
 	var costAccount, paymentAccount string
 	mappings := rs.Apply(
 		rules.Input(instrumentKey, p.PaymentInstrument),
@@ -147,7 +98,7 @@ func (p Parsed) transaction(rs *rules.RuleSet) (*Transaction, error) {
 		return nil, errors.Errorf("Unable to determine %q for instrument %q.  rs=%#v", paymentAccountKey, p.PaymentInstrument, rs)
 	}
 
-	return &Transaction{
+	return ledgertools.NewTransaction(
 		p.Date,
 		p.CheckNumber,
 		p.Payee,
@@ -155,5 +106,5 @@ func (p Parsed) transaction(rs *rules.RuleSet) (*Transaction, error) {
 		p.Amount,
 		costAccount,
 		paymentAccount,
-	}, nil
+	), nil
 }
