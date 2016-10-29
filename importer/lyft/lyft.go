@@ -2,7 +2,6 @@ package lyft
 
 import (
 	"fmt"
-	"regexp"
 	"strings"
 	"time"
 
@@ -22,18 +21,25 @@ const (
 
 var pacificTz *time.Location
 
-var (
-	receiptRe = regexp.MustCompile("^Receipt #(.+)$")
-	chargeRe  = regexp.MustCompile("^Total charged to ([^:]+): (.+)$")
-)
+type prefixMatcher []string
 
-// We expect to find lines starting with these and will import those
-// lines as comments.
-var commentRes = []*regexp.Regexp{
-	regexp.MustCompile("^(Ride|Line) completed on *"),
-	regexp.MustCompile("^Your Driver was .*"),
-	regexp.MustCompile("^Pickup: .*"),
-	regexp.MustCompile("^Dropoff: "),
+func (m prefixMatcher) match(line string) string {
+	for _, prefix := range m {
+		if strings.HasPrefix(line, prefix) {
+			return strings.TrimPrefix(line, prefix)
+		}
+	}
+	return ""
+}
+
+var receiptMatcher prefixMatcher = []string{"Receipt #"}
+var chargeMatcher prefixMatcher = []string{"Total charged to "}
+
+var commentMatchers = []prefixMatcher{
+	{"Ride completed on ", "Line completed on "},
+	{"Your Driver was "},
+	{"Pickup: "},
+	{"Dropoff: "},
 }
 
 const payee = "Lyft"
@@ -93,22 +99,26 @@ func ImportMessage(msg ledgertools.Message) (*importer.Parsed, error) {
 	var instrument string
 
 	for _, line := range strings.Split(msg.TextPlain, "\n") {
-		for _, re := range commentRes {
-			if re.MatchString(line) {
+		for _, m := range commentMatchers {
+			if m.match(line) != "" {
 				comments = append(comments, line)
 				continue
 			}
 		}
 
-		if match := receiptRe.FindStringSubmatch(line); match != nil {
-			checkNumber = strings.TrimSpace(match[1])
+		if rest := receiptMatcher.match(line); rest != "" {
+			checkNumber = rest
 			continue
 		}
 
-		if match := chargeRe.FindStringSubmatch(line); match != nil {
-			instrument = strings.TrimSpace(match[1])
-			amount = strings.TrimSpace(match[2])
-			continue
+		if rest := chargeMatcher.match(line); rest != "" {
+			// rest should like like 'Visa ***1234: $20.18'
+			tokens := strings.SplitN(rest, ":", 2)
+			if len(tokens) == 2 {
+				instrument = tokens[0]
+				amount = strings.TrimSpace(tokens[1])
+				continue
+			}
 		}
 	}
 
@@ -116,8 +126,8 @@ func ImportMessage(msg ledgertools.Message) (*importer.Parsed, error) {
 	if checkNumber == "" {
 		return nil, errors.Errorf("Missing valid receipt line in %q", msg.TextPlain)
 	}
-	if len(comments) != len(commentRes) {
-		return nil, errors.Errorf("Missing comments.  Found %q in %q.  Expected to find lines starting with %q", comments, msg.TextPlain, commentRes)
+	if len(comments) != len(commentMatchers) {
+		return nil, errors.Errorf("Missing comments.  Found %q in %q.  Expected to find lines starting with %q", comments, msg.TextPlain, commentMatchers)
 	}
 	if amount == "" || instrument == "" {
 		return nil, errors.Errorf("charge line in %q", msg.TextPlain)

@@ -66,6 +66,12 @@ func TestHappyImport(t *testing.T) {
 	equals(t, "Visa ***1234", parsed.PaymentInstrument)
 }
 
+func BenchmarkHappyImport(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		ImportMessage(happyMsg)
+	}
+}
+
 // assert fails the test if the condition is false.
 func assert(tb testing.TB, condition bool, msg string, v ...interface{}) {
 	if !condition {
