@@ -33,7 +33,7 @@ const payee = "Lyft"
 
 // ImportMessage imports an email message.  Returns nil if msg does
 // not appear to be a lyft ride summary.  Returns an error if it does
-// appear// to be a lyft ride summary, but we have trouble parsing it.
+// appear to be a lyft ride summary, but we have trouble parsing it.
 // An example valid email would be:
 //
 //   Hi Gina, thanks for riding with Jane D!
@@ -85,20 +85,20 @@ func ImportMessage(msg ledgertools.Message) (*importer.Parsed, error) {
 			break
 		}
 		for _, m := range commentMatchers {
-			if m.Match(line) != "" {
+			if m.Match(line) != nil {
 				comments = append(comments, line)
 				continue
 			}
 		}
 
-		if rest := receiptMatcher.Match(line); rest != "" {
-			checkNumber = rest
+		if match := receiptMatcher.Match(line); match != nil {
+			checkNumber = match()
 			continue
 		}
 
-		if rest := chargeMatcher.Match(line); rest != "" {
+		if match := chargeMatcher.Match(line); match != nil {
 			// rest should like like 'Visa ***1234: $20.18'
-			tokens := strings.SplitN(rest, ":", 2)
+			tokens := strings.SplitN(match(), ":", 2)
 			if len(tokens) == 2 {
 				instrument = tokens[0]
 				amount = strings.TrimSpace(tokens[1])

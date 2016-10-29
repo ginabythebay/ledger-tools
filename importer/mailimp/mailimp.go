@@ -18,19 +18,49 @@ func init() {
 	}
 }
 
+// Match represents a match.  When called, it returns the 'rest' of
+// a string (e.g. the suffix when we matched on prefix)
+type Match func() string
+
+// LineMatcher knows how to match lines
+type LineMatcher interface {
+	Match(line string) Match
+}
+
 // PrefixMatcher knows how to match line prefixes
 type PrefixMatcher []string
 
 // Match checks to see if a line matches the configured prefixes.  If
 // a match is found, we return the rest of the line (the non-matching
-// portion).  Otherwise return ""
-func (m PrefixMatcher) Match(line string) string {
+// portion).  Otherwise return nil
+func (m PrefixMatcher) Match(line string) Match {
 	for _, prefix := range m {
 		if strings.HasPrefix(line, prefix) {
-			return strings.TrimRightFunc(strings.TrimPrefix(line, prefix), unicode.IsSpace)
+			return func() string {
+				return strings.TrimRightFunc(
+					strings.TrimPrefix(line, prefix), unicode.IsSpace)
+			}
 		}
 	}
-	return ""
+	return nil
+}
+
+// SuffixMatcher knows how to match line suffixes
+type SuffixMatcher []string
+
+// Match checks to see if a line matches the configured suffixes.  If
+// a match is found, we return the rest of the line (the non-matching
+// portion).  Otherwise return nil
+func (m SuffixMatcher) Match(line string) Match {
+	for _, suffix := range m {
+		if strings.HasSuffix(line, suffix) {
+			return func() string {
+				return strings.TrimRightFunc(
+					strings.TrimSuffix(line, suffix), unicode.IsSpace)
+			}
+		}
+	}
+	return nil
 }
 
 // LineSplitter splits some text into lines.  Using this instead of
