@@ -20,6 +20,7 @@ import (
 	"github.com/ginabythebay/ledger-tools/gmail"
 	"github.com/ginabythebay/ledger-tools/importer"
 	"github.com/ginabythebay/ledger-tools/importer/amazon"
+	"github.com/ginabythebay/ledger-tools/importer/kindle"
 	"github.com/ginabythebay/ledger-tools/importer/lyft"
 	"github.com/ginabythebay/ledger-tools/parser"
 	"github.com/pkg/errors"
@@ -37,10 +38,12 @@ var typeNames []string
 var allMsgFetchers = []messageFetcher{
 	lyftFetcher,
 	amazonFetcher,
+	kindleFetcher,
 }
 var allParsers = []importer.Parser{
 	lyft.ImportMessage,
 	amazon.ImportMessage,
+	kindle.ImportMessage,
 }
 
 func init() {
@@ -203,6 +206,14 @@ func amazonFetcher(gm *gmail.Gmail, days int) ([]ledgertools.Message, error) {
 	return gm.QueryMessages(
 		gmail.QueryFrom(amazon.From),
 		gmail.QuerySubject(amazon.SubjectPrefix),
+		gmail.QueryNewerThan(days),
+	)
+}
+
+func kindleFetcher(gm *gmail.Gmail, days int) ([]ledgertools.Message, error) {
+	return gm.QueryMessages(
+		gmail.QueryFrom(kindle.From),
+		gmail.QuerySubject(kindle.SubjectPrefix),
 		gmail.QueryNewerThan(days),
 	)
 }

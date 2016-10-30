@@ -24,7 +24,7 @@ const (
 	DefaultPayment = "KindleDefaultPayment"
 )
 
-const payee = "Amazon"
+const payee = "Amazon Kindle"
 
 var orderMatcher = mailimp.PrefixMatcher([]string{"Order #:"})
 
