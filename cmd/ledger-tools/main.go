@@ -207,13 +207,9 @@ func cmdGmail(c *cli.Context) (result error) {
 }
 
 func combine(options []gmail.QueryOption, more ...gmail.QueryOption) []gmail.QueryOption {
-	var result []gmail.QueryOption
-	for _, o := range options {
-		result = append(result, o)
-	}
-	for _, o := range more {
-		result = append(result, o)
-	}
+	result := make([]gmail.QueryOption, 0, len(options)+len(more))
+	result = append(result, options...)
+	result = append(result, more...)
 	return result
 }
 
