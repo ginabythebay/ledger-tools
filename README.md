@@ -8,7 +8,6 @@
 
 * instead of converting csv to csv, convert it directly into ledger format
 * recognize existing entries that make for duplicates.  Prefer email import to csv import
-* Handle AmazonSmile orders in gmail.  At a glance, the email itself looks the same, but the subject is different ('Your AmazonSmile order of "blah blah..." has shipped!')
 * Some non-amazonsmile orders have email subjects that look like: 'Your Amazon.com order of "book title" has shipped!'.  Handle those too.
 * handle Patreon emails.  from bingo@patreon.com.  subject 'Thank you for supporting your creators!'
 * handle apple itunes emails

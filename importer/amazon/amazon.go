@@ -15,17 +15,27 @@ const (
 	from        = "ship-confirm@amazon.com"
 	fromMatcher = "<" + from + ">"
 
-	subjectPrefix = "Your Amazon.com order has shipped"
-
 	defaultPayment = "AmazonDefaultPayment"
 	payee          = "Amazon"
 )
 
+var subjectPrefixes = []string{
+	"Your Amazon.com order has shipped",
+	"Your AmazonSmile order has shipped",
+}
+
+func queries() []gmail.QuerySet {
+	var result []gmail.QuerySet
+	for _, sp := range subjectPrefixes {
+		qs := []gmail.QueryOption{gmail.QueryFrom(from), gmail.QuerySubject(sp)}
+		result = append(result, qs)
+	}
+	return result
+}
+
 // GmailImporter knows how to fetch and parse amazon emails.
 var GmailImporter = importer.NewGmailImporter(
-	[]gmail.QuerySet{
-		{gmail.QueryFrom(from), gmail.QuerySubject(subjectPrefix)},
-	},
+	queries(),
 	[]importer.Parser{
 		importMessage,
 	},
@@ -93,7 +103,14 @@ func importMessage(msg ledgertools.Message) (*importer.Parsed, error) {
 	if !strings.Contains(msg.From, fromMatcher) {
 		return nil, nil
 	}
-	if !strings.HasPrefix(msg.Subject, subjectPrefix) {
+	subjectMatch := false
+	for _, sp := range subjectPrefixes {
+		if strings.HasPrefix(msg.Subject, sp) {
+			subjectMatch = true
+			break
+		}
+	}
+	if !subjectMatch {
 		return nil, nil
 	}
 
