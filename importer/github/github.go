@@ -5,18 +5,28 @@ import (
 	"time"
 
 	ledgertools "github.com/ginabythebay/ledger-tools"
+	"github.com/ginabythebay/ledger-tools/gmail"
 	"github.com/ginabythebay/ledger-tools/importer"
 	"github.com/ginabythebay/ledger-tools/importer/mailimp"
 	"github.com/pkg/errors"
 )
 
 const (
-	// From is the email address we expect to get invoices from
-	From        = "support@github.com"
-	fromMatcher = "<" + From + ">"
+	from        = "support@github.com"
+	fromMatcher = "<" + from + ">"
 
-	// SubjectPrefix is the common prefix we see in invoices
-	SubjectPrefix = "[GitHub] Payment Receipt for"
+	subjectPrefix = "[GitHub] Payment Receipt for"
+	payee         = "Github"
+)
+
+// GmailImporter knows how to fetch and parse github emails.
+var GmailImporter = importer.NewGmailImporter(
+	[]gmail.QuerySet{
+		{gmail.QueryFrom(from), gmail.QuerySubject(subjectPrefix)},
+	},
+	[]importer.Parser{
+		importMessage,
+	},
 )
 
 var amountMatcher = mailimp.PrefixMatcher([]string{"Amount: USD "})
@@ -28,16 +38,14 @@ var commentMatchers = []mailimp.PrefixMatcher{
 	{"For service through:"},
 }
 
-const payee = "Github"
-
-// ImportMessage imports an email message.  Returns nil if msg does
+// importMessage imports an email message.  Returns nil if msg does
 // not appear to be a github invoice.  Returns an error if it does
 // appear to be a github invoice, but we have trouble parsing it.
-func ImportMessage(msg ledgertools.Message) (*importer.Parsed, error) {
+func importMessage(msg ledgertools.Message) (*importer.Parsed, error) {
 	if !strings.Contains(msg.From, fromMatcher) {
 		return nil, nil
 	}
-	if !strings.HasPrefix(msg.Subject, SubjectPrefix) {
+	if !strings.HasPrefix(msg.Subject, subjectPrefix) {
 		return nil, nil
 	}
 

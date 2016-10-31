@@ -46,7 +46,7 @@ var happyMsg = ledgertools.NewMessage(
 	happyEmail)
 
 func TestHappyImport(t *testing.T) {
-	parsed, err := ImportMessage(happyMsg)
+	parsed, err := importMessage(happyMsg)
 	ok(t, err)
 
 	year, month, day := parsed.Date.Date()
@@ -67,7 +67,7 @@ func TestHappyImport(t *testing.T) {
 
 func BenchmarkHappyImport(b *testing.B) {
 	for i := 0; i < b.N; i++ {
-		ImportMessage(happyMsg)
+		importMessage(happyMsg)
 	}
 }
 

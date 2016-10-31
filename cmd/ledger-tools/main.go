@@ -35,21 +35,6 @@ var csvTypes = map[string][]ops.Mutator{
 }
 var typeNames []string
 
-// TODO(gina) make it so I don't have to keep these two things in sync
-var allMsgFetchers = []messageFetcher{
-	lyftFetcher,
-	amazonFetcher,
-	kindleFetcher,
-	githubFetcher,
-}
-
-var allParsers = []importer.Parser{
-	lyft.ImportMessage,
-	amazon.ImportMessage,
-	kindle.ImportMessage,
-	github.ImportMessage,
-}
-
 func init() {
 	for name := range csvTypes {
 		typeNames = append(typeNames, name)
@@ -156,8 +141,22 @@ func cmdPrint(c *cli.Context) (result error) {
 	return nil
 }
 
+var allGmailImporters = []importer.GmailImporter{
+	amazon.GmailImporter,
+	github.GmailImporter,
+	kindle.GmailImporter,
+	lyft.GmailImporter,
+}
+
 func cmdGmail(c *cli.Context) (result error) {
-	imp, err := msgImporter()
+	var allParsers []importer.Parser
+	var allQuerySets []gmail.QuerySet
+	for _, imp := range allGmailImporters {
+		allParsers = append(allParsers, imp.Parsers...)
+		allQuerySets = append(allQuerySets, imp.Queries...)
+	}
+
+	imp, err := msgImporter(allParsers)
 	if err != nil {
 		log.Fatalf("Get msg importer %+v", err)
 	}
@@ -178,8 +177,11 @@ func cmdGmail(c *cli.Context) (result error) {
 		options = append(options, gmail.QueryBefore(before))
 	}
 
-	for _, mf := range allMsgFetchers {
-		msgs, err := mf(gm, options)
+	for _, qs := range allQuerySets {
+		var query []gmail.QueryOption
+		query = append(query, options...)
+		query = append(query, qs...)
+		msgs, err := gm.QueryMessages(query...)
 		if err != nil {
 			log.Fatalf("Get mail %+v", err)
 		}
@@ -213,33 +215,7 @@ func combine(options []gmail.QueryOption, more ...gmail.QueryOption) []gmail.Que
 	return result
 }
 
-type messageFetcher func(gm *gmail.Gmail, options []gmail.QueryOption) ([]ledgertools.Message, error)
-
-func lyftFetcher(gm *gmail.Gmail, options []gmail.QueryOption) ([]ledgertools.Message, error) {
-	return gm.QueryMessages(combine(options,
-		gmail.QueryFrom(lyft.From),
-		gmail.QuerySubject(lyft.SubjectPrefix))...)
-}
-
-func amazonFetcher(gm *gmail.Gmail, options []gmail.QueryOption) ([]ledgertools.Message, error) {
-	return gm.QueryMessages(combine(options,
-		gmail.QueryFrom(amazon.From),
-		gmail.QuerySubject(amazon.SubjectPrefix))...)
-}
-
-func kindleFetcher(gm *gmail.Gmail, options []gmail.QueryOption) ([]ledgertools.Message, error) {
-	return gm.QueryMessages(combine(options,
-		gmail.QueryFrom(kindle.From),
-		gmail.QuerySubject(kindle.SubjectPrefix))...)
-}
-
-func githubFetcher(gm *gmail.Gmail, options []gmail.QueryOption) ([]ledgertools.Message, error) {
-	return gm.QueryMessages(combine(options,
-		gmail.QueryFrom(github.From),
-		gmail.QuerySubject(github.SubjectPrefix))...)
-}
-
-func msgImporter() (*importer.MsgImporter, error) {
+func msgImporter(allParsers []importer.Parser) (*importer.MsgImporter, error) {
 	config, err := readRuleConfig()
 	if err != nil {
 		return nil, errors.Wrap(err, "readRuleConfig")

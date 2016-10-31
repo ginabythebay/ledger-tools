@@ -4,6 +4,7 @@ import (
 	"time"
 
 	ledgertools "github.com/ginabythebay/ledger-tools"
+	"github.com/ginabythebay/ledger-tools/gmail"
 	"github.com/ginabythebay/ledger-tools/rules"
 	"github.com/pkg/errors"
 )
@@ -26,6 +27,17 @@ var (
 )
 
 type Parser func(msg ledgertools.Message) (*Parsed, error)
+
+// GmailImporter knows to query gmail for messages and how to
+// parse them.
+type GmailImporter struct {
+	Queries []gmail.QuerySet
+	Parsers []Parser
+}
+
+func NewGmailImporter(queries []gmail.QuerySet, parsers []Parser) GmailImporter {
+	return GmailImporter{queries, parsers}
+}
 
 // MsgImporter knows how to import messages
 type MsgImporter struct {

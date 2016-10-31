@@ -5,26 +5,34 @@ import (
 	"time"
 
 	ledgertools "github.com/ginabythebay/ledger-tools"
+	"github.com/ginabythebay/ledger-tools/gmail"
 	"github.com/ginabythebay/ledger-tools/importer"
 	"github.com/ginabythebay/ledger-tools/importer/mailimp"
 	"github.com/pkg/errors"
 )
 
-const (
-	// From is the email address we expect to get amazon digital orders from
-	From        = "digital-no-reply@amazon.com"
-	fromMatcher = "<" + From + ">"
-
-	// SubjectPrefix is the common prefix we see in shipment subjects
-	SubjectPrefix = "Amazon.com order of "
-
-	// DefaultPayment represents the payment instrument we always
-	// return as Amazon doesn't send us any payment instrument
-	// information.
-	DefaultPayment = "KindleDefaultPayment"
+// GmailImporter knows how to fetch and parse kindle emails.
+var GmailImporter = importer.NewGmailImporter(
+	[]gmail.QuerySet{
+		{gmail.QueryFrom(from), gmail.QuerySubject(subjectPrefix)},
+	},
+	[]importer.Parser{
+		importMessage,
+	},
 )
 
-const payee = "Amazon Kindle"
+const (
+	from        = "digital-no-reply@amazon.com"
+	fromMatcher = "<" + from + ">"
+
+	subjectPrefix = "Amazon.com order of "
+
+	// defaultPayment represents the payment instrument we always
+	// return as Amazon doesn't send us any payment instrument
+	// information.
+	defaultPayment = "KindleDefaultPayment"
+	payee          = "Amazon Kindle"
+)
 
 var orderMatcher = mailimp.PrefixMatcher([]string{"Order #:"})
 
@@ -43,7 +51,7 @@ var commentPrefixes = []string{
 	"You can view your receipt or invoice by visiting the Order details page:",
 }
 
-// ImportMessage imports an email message.  Returns nil if msg does
+// importMessage imports an email message.  Returns nil if msg does
 // not appear to be a amazon digital order.  Returns an error if it
 // does appear to be a amazon digital order, but we have trouble
 // parsing it.  An example valid email would be:
@@ -104,11 +112,11 @@ var commentPrefixes = []string{
 //   cannot accept incoming e-mail. Please do not reply to this message.
 //
 //   Thanks again for shopping with us.
-func ImportMessage(msg ledgertools.Message) (*importer.Parsed, error) {
+func importMessage(msg ledgertools.Message) (*importer.Parsed, error) {
 	if !strings.Contains(msg.From, fromMatcher) {
 		return nil, nil
 	}
-	if !strings.HasPrefix(msg.Subject, SubjectPrefix) {
+	if !strings.HasPrefix(msg.Subject, subjectPrefix) {
 		return nil, nil
 	}
 
@@ -184,5 +192,5 @@ func ImportMessage(msg ledgertools.Message) (*importer.Parsed, error) {
 		payee,
 		comments,
 		amount,
-		DefaultPayment), nil
+		defaultPayment), nil
 }

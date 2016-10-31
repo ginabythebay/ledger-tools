@@ -117,6 +117,9 @@ func (gm *Gmail) queryPage(query string, nextPageToken string) (*messageList, er
 // QueryOption represents an option we can use to modify a query for messages.
 type QueryOption func() string
 
+// QuerySet is a set of related query options
+type QuerySet []QueryOption
+
 // QuerySubject allows us to query for words in a subject.
 func QuerySubject(subject string) QueryOption {
 	return func() string {
