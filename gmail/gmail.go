@@ -172,7 +172,6 @@ func (gm *Gmail) QueryMessages(opts ...QueryOption) ([]ledgertools.Message, erro
 		tokens = append(tokens, o())
 	}
 	query := strings.Join(tokens, " ")
-	fmt.Printf("Query: %q\n", query)
 
 	var result []ledgertools.Message
 	var nextPageToken string
