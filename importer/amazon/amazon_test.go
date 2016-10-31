@@ -179,6 +179,90 @@ func BenchmarkSmileImport(b *testing.B) {
 	}
 }
 
+var bookEmail = strings.TrimSpace(`
+Amazon.com Shipping Confirmation
+http://www.amazon.com/ref=TE_SIMP_g
+
+--------------------------------------------------------------------
+Hello Gina White,
+
+"Book Title..." has shipped.
+
+Details
+Order #123-1234567-1234567
+
+Arriving:
+    Tuesday, October 18
+
+Track your package at:
+	https://www.amazon.com/trackinglink
+
+Shipped to:
+    Gina White
+    Some Address...
+
+		
+====================================================================
+
+    Total Before Tax: $21.37 
+    Tax Collected: $1.87
+    Shipment Total: $23.24
+
+====================================================================
+
+View or manage your order in Your Orders:
+https://www.amazon.com/orderlink
+
+Return or replace your items in Your Orders(https://www.amazon.com/historylink)
+
+
+We hope to see you again soon.<br/>
+Amazon.com
+
+--------------------------------------------------------------------
+Unless otherwise noted, items sold by Amazon.com LLC are subject to sales tax in select states in accordance with the applicable laws of that state. If your order contains one or more items from a seller other than Amazon.com LLC, it may be subject to state and local sales tax, depending upon the sellers business policies and the location of their operations. For more tax and seller information, visit: http://www.amazon.com/sellerlink
+
+Your invoice can be accessed here:
+https://www.amazon.com/invoicelink
+
+This email was sent from a notification-only address that cannot accept incoming email. Please do not reply to this message.     `)
+
+var bookMsg = ledgertools.NewMessage(
+	"Sun, 16 Oct 2016 18:39:50 +0000",
+	"client@somehost.com",
+	fromMatcher,
+	"Your Amazon.com order of \"Book Title...\" has shipped!",
+	bookEmail)
+
+func TestBookImport(t *testing.T) {
+	parsed, err := importMessage(bookMsg)
+	ok(t, err)
+
+	year, month, day := parsed.Date.Date()
+	equals(t, 2016, year)
+	equals(t, time.October, month)
+	equals(t, 16, day)
+
+	equals(t, "123-1234567-1234567", parsed.CheckNumber)
+	equals(t,
+		[]string{
+			`"Book Title..." has shipped.`,
+			"Order #123-1234567-1234567",
+			"https://www.amazon.com/trackinglink",
+			"https://www.amazon.com/orderlink",
+			"https://www.amazon.com/invoicelink",
+		},
+		parsed.Comments)
+	equals(t, "$23.24", parsed.Amount)
+	equals(t, defaultPayment, parsed.PaymentInstrument)
+}
+
+func BenchmarkBookImport(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		importMessage(stdMsg)
+	}
+}
+
 // assert fails the test if the condition is false.
 func assert(tb testing.TB, condition bool, msg string, v ...interface{}) {
 	if !condition {

@@ -20,8 +20,9 @@ const (
 )
 
 var subjectPrefixes = []string{
-	"Your Amazon.com order has shipped",
-	"Your AmazonSmile order has shipped",
+	"Your Amazon.com order has shipped",  // 'standard' orders
+	"Your AmazonSmile order has shipped", // smile orders
+	"Your Amazon.com order of",           // book orders
 }
 
 func queries() []gmail.QuerySet {
