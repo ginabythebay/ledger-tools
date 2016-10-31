@@ -40,15 +40,14 @@ var allMsgFetchers = []messageFetcher{
 	lyftFetcher,
 	amazonFetcher,
 	kindleFetcher,
-	// githubFetcher,
+	githubFetcher,
 }
 
 var allParsers = []importer.Parser{
 	lyft.ImportMessage,
 	amazon.ImportMessage,
 	kindle.ImportMessage,
-	// TODO(gina) implement github fetching and parsing.  The problem with the current system is that I only see ~20% of the email when I fetch it this way.  I suspect that I may want to switch to telling gmail to download the raw message and then do the mime handling locally.
-	// github.ImportMessage,
+	github.ImportMessage,
 }
 
 func init() {

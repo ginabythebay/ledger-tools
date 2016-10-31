@@ -50,6 +50,14 @@ We hope to see you again soon.<br/>
 Amazon.com
 
 --------------------------------------------------------------------
+Unless otherwise noted, items sold by Amazon.com LLC are subject to sales tax in select states in accordance with the applicable laws of that state. If your order contains one or more items from a seller other than Amazon.com LLC, it may be subject to state and local sales tax, depending upon the sellers business policies and the location of their operations. For more tax and seller information, visit: http://www.amazon.com/sellerinfo
+
+Items in this shipment may be subject to California's Electronic Waste Recycling Act. For any items not sold by Amazon.com LLC or Amazon Digital Services, Inc. that are subject to that Act, the seller of that item is responsible for submitting the California Electronic Waste Recycling fees on your behalf.
+
+Your invoice can be accessed here:
+https://www.amazon.com/invoicelink
+
+This email was sent from a notification-only address that cannot accept incoming email. Please do not reply to this message.
 `)
 
 var happyMsg = ledgertools.NewMessage(
@@ -75,6 +83,7 @@ func TestHappyImport(t *testing.T) {
 			"Order #123-1234567-1234567",
 			"https://www.amazon.com/sometrackinglink",
 			"https://www.amazon.com/someorderlink",
+			"https://www.amazon.com/invoicelink",
 		},
 		parsed.Comments)
 	equals(t, "$28.02", parsed.Amount)

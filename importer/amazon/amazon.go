@@ -39,6 +39,7 @@ var commentMatchers = []mailimp.LineMatcher{
 var commentPrefixes = []string{
 	"Track your package at:",
 	"View or manage your order in Your Orders:",
+	"Your invoice can be accessed here:",
 }
 
 // ImportMessage imports an email message.  Returns nil if msg does

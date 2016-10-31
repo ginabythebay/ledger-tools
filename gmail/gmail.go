@@ -57,7 +57,7 @@ func GetService() (*Gmail, error) {
 	return &Gmail{srv}, nil
 }
 
-func decode(msg *gmail.Message) ledgertools.Message {
+func decode(msg *gmail.Message) (*ledgertools.Message, error) {
 	var date, to, from, subject string
 	payload := msg.Payload
 	for _, h := range payload.Headers {
@@ -72,19 +72,25 @@ func decode(msg *gmail.Message) ledgertools.Message {
 			subject = h.Value
 		}
 	}
-	textPlain := findBody(payload, "text/plain")
-	return ledgertools.Message{date, to, from, subject, textPlain}
+	textPlain, err := findBody(payload, "text/plain")
+	if err != nil {
+		return nil, errors.Wrap(err, "findbody")
+	}
+	return &ledgertools.Message{date, to, from, subject, textPlain}, nil
 }
 
-func findBody(part *gmail.MessagePart, mimeType string) string {
+func findBody(part *gmail.MessagePart, mimeType string) (string, error) {
 	if part.MimeType == mimeType {
-		b, _ := base64.StdEncoding.DecodeString(part.Body.Data)
-		return string(b)
+		b, err := base64.URLEncoding.DecodeString(part.Body.Data)
+		if err != nil {
+			return "", errors.Wrapf(err, "base64 decode of %#v", part)
+		}
+		return string(b), nil
 	}
 	for _, child := range part.Parts {
 		return findBody(child, mimeType)
 	}
-	return ""
+	return "", nil
 }
 
 type messageList struct {
@@ -163,7 +169,11 @@ func (gm *Gmail) QueryMessages(opts ...QueryOption) ([]ledgertools.Message, erro
 				return nil, errors.Wrapf(err, "Getting msg %q", id)
 			}
 
-			result = append(result, decode(msg))
+			decoded, err := decode(msg)
+			if err != nil {
+				return nil, errors.Wrapf(err, "decode msg %s", id)
+			}
+			result = append(result, *decoded)
 		}
 		nextPageToken = page.nextPageToken
 		if nextPageToken == "" {
