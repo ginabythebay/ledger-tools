@@ -168,8 +168,18 @@ func cmdGmail(c *cli.Context) (result error) {
 	}
 	var allTransactions []*ledgertools.Transaction
 
+	var options []gmail.QueryOption
+	if after := c.String("after"); after == "" {
+		options = append(options, gmail.QueryNewerThan(c.Int("days")))
+	} else {
+		options = append(options, gmail.QueryAfter(after))
+	}
+	if before := c.String("before"); before != "" {
+		options = append(options, gmail.QueryBefore(before))
+	}
+
 	for _, mf := range allMsgFetchers {
-		msgs, err := mf(gm, 30)
+		msgs, err := mf(gm, options)
 		if err != nil {
 			log.Fatalf("Get mail %+v", err)
 		}
@@ -196,38 +206,41 @@ func cmdGmail(c *cli.Context) (result error) {
 	return nil
 }
 
-type messageFetcher func(gm *gmail.Gmail, days int) ([]ledgertools.Message, error)
+func combine(options []gmail.QueryOption, more ...gmail.QueryOption) []gmail.QueryOption {
+	var result []gmail.QueryOption
+	for _, o := range options {
+		result = append(result, o)
+	}
+	for _, o := range more {
+		result = append(result, o)
+	}
+	return result
+}
 
-func lyftFetcher(gm *gmail.Gmail, days int) ([]ledgertools.Message, error) {
-	return gm.QueryMessages(
+type messageFetcher func(gm *gmail.Gmail, options []gmail.QueryOption) ([]ledgertools.Message, error)
+
+func lyftFetcher(gm *gmail.Gmail, options []gmail.QueryOption) ([]ledgertools.Message, error) {
+	return gm.QueryMessages(combine(options,
 		gmail.QueryFrom(lyft.From),
-		gmail.QuerySubject(lyft.SubjectPrefix),
-		gmail.QueryNewerThan(days),
-	)
+		gmail.QuerySubject(lyft.SubjectPrefix))...)
 }
 
-func amazonFetcher(gm *gmail.Gmail, days int) ([]ledgertools.Message, error) {
-	return gm.QueryMessages(
+func amazonFetcher(gm *gmail.Gmail, options []gmail.QueryOption) ([]ledgertools.Message, error) {
+	return gm.QueryMessages(combine(options,
 		gmail.QueryFrom(amazon.From),
-		gmail.QuerySubject(amazon.SubjectPrefix),
-		gmail.QueryNewerThan(days),
-	)
+		gmail.QuerySubject(amazon.SubjectPrefix))...)
 }
 
-func kindleFetcher(gm *gmail.Gmail, days int) ([]ledgertools.Message, error) {
-	return gm.QueryMessages(
+func kindleFetcher(gm *gmail.Gmail, options []gmail.QueryOption) ([]ledgertools.Message, error) {
+	return gm.QueryMessages(combine(options,
 		gmail.QueryFrom(kindle.From),
-		gmail.QuerySubject(kindle.SubjectPrefix),
-		gmail.QueryNewerThan(days),
-	)
+		gmail.QuerySubject(kindle.SubjectPrefix))...)
 }
 
-func githubFetcher(gm *gmail.Gmail, days int) ([]ledgertools.Message, error) {
-	return gm.QueryMessages(
+func githubFetcher(gm *gmail.Gmail, options []gmail.QueryOption) ([]ledgertools.Message, error) {
+	return gm.QueryMessages(combine(options,
 		gmail.QueryFrom(github.From),
-		gmail.QuerySubject(github.SubjectPrefix),
-		gmail.QueryNewerThan(days),
-	)
+		gmail.QuerySubject(github.SubjectPrefix))...)
 }
 
 func msgImporter() (*importer.MsgImporter, error) {
@@ -311,7 +324,22 @@ func main() {
 			Action: cmdCsv,
 		},
 		{
-			Name:   "gmail",
+			Name: "gmail",
+			Flags: []cli.Flag{
+				cli.IntFlag{
+					Name:  "d, days",
+					Value: 30,
+					Usage: "Query for emails newer than this many days.  Ignored if --after is set.",
+				},
+				cli.StringFlag{
+					Name:  "a, after",
+					Usage: "Query for emails after this date.  Example value \"2004/04/16\".  Setting this will cause --days to be ignored.",
+				},
+				cli.StringFlag{
+					Name:  "b, before",
+					Usage: "Query for emails before this date.  Example value \"2004/04/18\".",
+				},
+			},
 			Usage:  "Process gmail",
 			Action: cmdGmail,
 		},

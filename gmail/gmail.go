@@ -131,10 +131,24 @@ func QueryFrom(from string) QueryOption {
 	}
 }
 
-// QueryNewerThan lets us query for message newer than days.
+// QueryNewerThan lets us query for messages newer than days.
 func QueryNewerThan(days int) QueryOption {
 	return func() string {
 		return fmt.Sprintf("newer_than:%dd", days)
+	}
+}
+
+// QueryAfter lets us query for messages after a date (e.g. "2014/04/16")
+func QueryAfter(after string) QueryOption {
+	return func() string {
+		return fmt.Sprintf("after:%s", after)
+	}
+}
+
+// QueryBefore lets us query for messages before a date (e.g. "2014/04/18")
+func QueryBefore(before string) QueryOption {
+	return func() string {
+		return fmt.Sprintf("before:%s", before)
 	}
 }
 
