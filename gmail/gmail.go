@@ -74,9 +74,15 @@ func decode(msg *gmail.Message) (*ledgertools.Message, error) {
 	}
 	textPlain, err := findBody(payload, "text/plain")
 	if err != nil {
-		return nil, errors.Wrap(err, "findbody")
+		return nil, errors.Wrap(err, "findbody text/plain")
 	}
-	return &ledgertools.Message{date, to, from, subject, textPlain}, nil
+	textHTML, err := findBody(payload, "text/html")
+	if err != nil {
+		return nil, errors.Wrap(err, "findbody text/html")
+	}
+
+	decoded := ledgertools.NewMessage(date, to, from, subject, textPlain, textHTML)
+	return &decoded, nil
 }
 
 func findBody(part *gmail.MessagePart, mimeType string) (string, error) {

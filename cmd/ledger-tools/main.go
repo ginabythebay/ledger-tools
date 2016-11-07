@@ -23,6 +23,7 @@ import (
 	"github.com/ginabythebay/ledger-tools/importer/github"
 	"github.com/ginabythebay/ledger-tools/importer/kindle"
 	"github.com/ginabythebay/ledger-tools/importer/lyft"
+	"github.com/ginabythebay/ledger-tools/importer/parkmobile"
 	"github.com/ginabythebay/ledger-tools/parser"
 	"github.com/pkg/errors"
 	"github.com/urfave/cli"
@@ -142,6 +143,7 @@ func cmdPrint(c *cli.Context) (result error) {
 }
 
 var allGmailImporters = []importer.GmailImporter{
+	parkmobile.GmailImporter,
 	amazon.GmailImporter,
 	github.GmailImporter,
 	kindle.GmailImporter,

@@ -42,7 +42,8 @@ var happyMsg = ledgertools.NewMessage(
 	"client@somehost.com",
 	fromMatcher,
 	"Your ride with Jane",
-	happyEmail)
+	happyEmail,
+	"")
 
 func TestHappyImport(t *testing.T) {
 	parsed, err := importMessage(happyMsg)

@@ -65,7 +65,8 @@ var stdMsg = ledgertools.NewMessage(
 	"client@somehost.com",
 	fromMatcher,
 	"Your Amazon.com order has shipped (#123-1234567-1234567)",
-	stdEmail)
+	stdEmail,
+	"")
 
 func TestStdImport(t *testing.T) {
 	parsed, err := importMessage(stdMsg)
@@ -148,7 +149,8 @@ var smileMsg = ledgertools.NewMessage(
 	"client@somehost.com",
 	fromMatcher,
 	"Your AmazonSmile order has shipped (#987-9876543-9876543)",
-	smileEmail)
+	smileEmail,
+	"")
 
 func TestSmileImport(t *testing.T) {
 	parsed, err := importMessage(smileMsg)
@@ -232,7 +234,8 @@ var bookMsg = ledgertools.NewMessage(
 	"client@somehost.com",
 	fromMatcher,
 	"Your Amazon.com order of \"Book Title...\" has shipped!",
-	bookEmail)
+	bookEmail,
+	"")
 
 func TestBookImport(t *testing.T) {
 	parsed, err := importMessage(bookMsg)

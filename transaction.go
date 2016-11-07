@@ -2,6 +2,7 @@ package ledgertools
 
 import (
 	"fmt"
+	"math/big"
 	"sort"
 	"strings"
 	"time"
@@ -10,6 +11,19 @@ import (
 
 const amountAlignmentCol = 65
 const indent = "    "
+
+type Amount struct {
+	Currency string // can also be a commodity
+	Value    big.Float
+}
+
+type Posting struct {
+	Account  string
+	Currency string
+	Amount   big.Float
+	State    rune
+	Comment  string
+}
 
 // Transaction is a simple version of a transaction that is capable of
 // represent movement of money between 2 accounts.
