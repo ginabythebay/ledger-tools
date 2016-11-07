@@ -12,7 +12,8 @@
 			"checksumSHA1": "0cyj4kaj9Q0e9S55BPIr2zBuwvo=",
 			"path": "github.com/andybalholm/cascadia",
 			"revision": "65919c611220063037b1db8eb334acaf17a6d8ea",
-			"revisionTime": "2016-10-18T13:42:59Z"
+		        "revisionTime": "2016-10-18T13:42:59Z"
+		},
 		{
 			"path": "appengine",
 			"revision": ""
@@ -78,7 +79,7 @@
 			"path": "golang.org/x/net/html/atom",
 			"revision": "55a3084c9119aeb9ba2437d595b0a7e9cb635da9",
 			"revisionTime": "2016-11-04T22:18:50Z"
-		}
+		},
 		{
 			"checksumSHA1": "XH7CgbL5Z8COUc+MKrYqS3FFosY=",
 			"path": "golang.org/x/oauth2",
