@@ -15,7 +15,7 @@ import (
 func TestTransactionString(t *testing.T) {
 	when, err := time.Parse("2006-01-02", "2016-10-28")
 	ok(t, err)
-	trans := ledgertools.NewTransaction(
+	trans, err := ledgertools.NewTransaction(
 		when,
 		"3030",
 		"Giant Corporation",
@@ -24,6 +24,7 @@ func TestTransactionString(t *testing.T) {
 		"Expenses:Go",
 		"Liabilities:CreditCard",
 	)
+	ok(t, err)
 
 	equals(t,
 		strings.TrimSpace(`
@@ -31,7 +32,7 @@ func TestTransactionString(t *testing.T) {
     ; first comment
     ; second comment
     Expenses:Go                                            $30.00
-    Liabilities:CreditCard
+    Liabilities:CreditCard                                $-30.00
 `),
 		trans.String(),
 	)

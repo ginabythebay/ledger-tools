@@ -118,5 +118,5 @@ func (p Parsed) transaction(rs *rules.RuleSet) (*ledgertools.Transaction, error)
 		p.Amount,
 		costAccount,
 		paymentAccount,
-	), nil
+	)
 }
