@@ -110,7 +110,7 @@ func (p Parsed) transaction(rs *rules.RuleSet) (*ledgertools.Transaction, error)
 		return nil, errors.Errorf("Unable to determine %q for instrument %q.  rs=%#v", paymentAccountKey, p.PaymentInstrument, rs)
 	}
 
-	return ledgertools.NewTransaction(
+	return ledgertools.SyntheticTransaction(
 		p.Date,
 		p.CheckNumber,
 		p.Payee,

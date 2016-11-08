@@ -15,7 +15,7 @@ import (
 func TestTransactionString(t *testing.T) {
 	when, err := time.Parse("2006-01-02", "2016-10-28")
 	ok(t, err)
-	trans, err := ledgertools.NewTransaction(
+	trans, err := ledgertools.SyntheticTransaction(
 		when,
 		"3030",
 		"Giant Corporation",

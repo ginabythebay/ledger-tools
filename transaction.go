@@ -45,8 +45,8 @@ type Transaction struct {
 	Postings []Posting
 }
 
-// NewTransaction creates a new Transaction
-func NewTransaction(date time.Time, checkNo, payee string, comments []string, amountText, costAccount, paymentAccount string) (*Transaction, error) {
+// SyntheticTransaction creates a new Transaction
+func SyntheticTransaction(date time.Time, checkNo, payee string, comments []string, amountText, costAccount, paymentAccount string) (*Transaction, error) {
 	currency, amount, err := parseAmount(amountText)
 	if err != nil {
 		return nil, errors.Wrap(err, "parseAmount")
