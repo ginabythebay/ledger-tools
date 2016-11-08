@@ -16,11 +16,6 @@ const indent = "    "
 
 // Posting represents a change to an account, along with associated metadata.
 type Posting struct {
-	// These fields are common to all postings in the same transaction.
-	Date    time.Time
-	CheckNo string // may not be set
-	Payee   string
-
 	Account  string
 	Currency string
 	Amount   big.Float
@@ -28,7 +23,13 @@ type Posting struct {
 }
 
 func (p *Posting) String() string {
-	prefix := indent + p.Account
+	var prefix string
+	if p.State == 0 {
+		prefix = indent + p.Account
+	} else {
+		prefix = indent + " " + string(p.State) + " " + p.Account
+	}
+
 	suffix := "  " + p.Currency + p.Amount.Text('f', 2)
 	delta := amountAlignmentCol - (utf8.RuneCountInString(prefix) + utf8.RuneCountInString(suffix))
 	var middle string
@@ -41,12 +42,17 @@ func (p *Posting) String() string {
 // Transaction is group of related Postings, with an optional shared
 // comment.
 type Transaction struct {
-	Comments []string // These should not contain the leading ; character
+	SrcFile  string // may not be set
+	BegLine  int    // may not be set
+	Date     time.Time
+	Code     string // may not be set.  The thing in parentheses.  e.g. check #
+	Payee    string
+	Notes    []string // may not be set
 	Postings []Posting
 }
 
 // SyntheticTransaction creates a new Transaction
-func SyntheticTransaction(date time.Time, checkNo, payee string, comments []string, amountText, costAccount, paymentAccount string) (*Transaction, error) {
+func SyntheticTransaction(date time.Time, code, payee string, notes []string, amountText, costAccount, paymentAccount string) (*Transaction, error) {
 	currency, amount, err := parseAmount(amountText)
 	if err != nil {
 		return nil, errors.Wrap(err, "parseAmount")
@@ -54,22 +60,22 @@ func SyntheticTransaction(date time.Time, checkNo, payee string, comments []stri
 	var negatedAmount big.Float
 	negatedAmount.Neg(&amount)
 	cost := Posting{
-		Date:     date,
-		CheckNo:  checkNo,
-		Payee:    payee,
 		Account:  costAccount,
 		Currency: currency,
 		Amount:   amount,
 	}
 	payment := Posting{
-		Date:     date,
-		CheckNo:  checkNo,
-		Payee:    payee,
 		Account:  paymentAccount,
 		Currency: currency,
 		Amount:   negatedAmount,
 	}
-	return &Transaction{comments, []Posting{cost, payment}}, nil
+
+	return &Transaction{
+		Date:     date,
+		Code:     code,
+		Payee:    payee,
+		Notes:    notes,
+		Postings: []Posting{cost, payment}}, nil
 }
 
 func parseAmount(s string) (currency string, amount big.Float, err error) {
@@ -81,20 +87,19 @@ func parseAmount(s string) (currency string, amount big.Float, err error) {
 	return currency, amount, err
 }
 
-func (t Transaction) String() string {
+func (t *Transaction) String() string {
 	var lines []string
-	first := &t.Postings[0]
-	dateText := first.Date.Format("2006/01/02")
+	dateText := t.Date.Format("2006/01/02")
 	var tokens []string
-	if first.CheckNo == "" {
-		tokens = []string{dateText, first.Payee}
+	if t.Code == "" {
+		tokens = []string{dateText, t.Payee}
 	} else {
-		tokens = []string{dateText, "(#" + first.CheckNo + ")", first.Payee}
+		tokens = []string{dateText, "(#" + t.Code + ")", t.Payee}
 	}
 	header := strings.Join(tokens, " ")
 	lines = append(lines, header)
-	for _, c := range t.Comments {
-		lines = append(lines, fmt.Sprintf("%s; %s", indent, c))
+	for _, n := range t.Notes {
+		lines = append(lines, fmt.Sprintf("%s; %s", indent, n))
 	}
 	for _, p := range t.Postings {
 		lines = append(lines, p.String())
@@ -118,5 +123,5 @@ func (s sorter) Swap(i, j int) {
 }
 
 func (s sorter) Less(i, j int) bool {
-	return s[i].Postings[0].Date.Before(s[j].Postings[0].Date)
+	return s[i].Date.Before(s[j].Date)
 }
