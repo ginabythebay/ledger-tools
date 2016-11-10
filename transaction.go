@@ -97,8 +97,6 @@ func NextTransaction(imports []Flattened) (*Transaction, []Flattened, error) {
 	return consolidate(imports, len(imports))
 }
 
-var zero big.Float
-
 func consolidate(imports []Flattened, end int) (*Transaction, []Flattened, error) {
 	use := imports[:end]
 	if len(use) < 2 {
@@ -112,8 +110,8 @@ func consolidate(imports []Flattened, end int) (*Transaction, []Flattened, error
 		postings = append(postings, p)
 		accum.Add(&accum, &f.Amount)
 	}
-	if accum.Cmp(&zero) != 0 {
-		return nil, nil, errors.Errorf("unable to import %#v, they should sum to 0.0 but instead they summed to %s", use, accum.Text('f', 2))
+	if !isNearZero(accum) {
+		return nil, nil, errors.Errorf("unable to import %#v, they should sum to 0.0 but instead they summed to %s", use, accum.Text('f', 5))
 	}
 
 	first := imports[0]
@@ -127,6 +125,18 @@ func consolidate(imports []Flattened, end int) (*Transaction, []Flattened, error
 		postings,
 	}
 	return &t, imports[end:], nil
+}
+
+var nearZero big.Float
+
+func init() {
+	nearZero.Parse("0.001", 10)
+}
+
+func isNearZero(f big.Float) bool {
+	f.Abs(&f)
+	c := f.Cmp(&nearZero)
+	return c == -1 || c == 0
 }
 
 func parseAmount(s string) (currency string, amount big.Float, err error) {
@@ -174,6 +184,11 @@ type Flattened struct {
 	Currency string // must be "$" for now
 	Amount   big.Float
 	State    rune // optional
+}
+
+func NewFlattened(srcFile string, begLine int, date time.Time, code string, payee string, transNotes []string, account string, currency string, amount big.Float, state rune) Flattened {
+	return Flattened{
+		srcFile, begLine, date, code, payee, transNotes, account, currency, amount, state}
 }
 
 // sameTransaction returns true if the two entries appear to be from
