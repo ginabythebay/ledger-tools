@@ -6,6 +6,9 @@
 
 ## importing tasks still to be done
 
+* automated and benchmark tests for register import
+* See if we can solve the notes problem for register import
+* Take a look at converting register import to a streaming system
 * instead of converting csv to csv, convert it directly into ledger format
 * recognize existing entries that make for duplicates.  Prefer email import to csv import
 * handle Patreon emails.  from bingo@patreon.com.  subject 'Thank you for supporting your creators!'
