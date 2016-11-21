@@ -10,6 +10,7 @@ import (
 	"os/user"
 	"path/filepath"
 	"strings"
+	"time"
 
 	ledgertools "github.com/ginabythebay/ledger-tools"
 	"github.com/ginabythebay/ledger-tools/csv"
@@ -25,6 +26,7 @@ import (
 	"github.com/ginabythebay/ledger-tools/importer/lyft"
 	"github.com/ginabythebay/ledger-tools/importer/parkmobile"
 	"github.com/ginabythebay/ledger-tools/parser"
+	"github.com/ginabythebay/ledger-tools/register"
 	"github.com/pkg/errors"
 	"github.com/urfave/cli"
 )
@@ -273,6 +275,16 @@ func cmdCsv(c *cli.Context) (result error) {
 	return nil
 }
 
+func cmdDedup(c *cli.Context) (result error) {
+	start := time.Now()
+	allTrans, err := register.Read()
+	if err != nil {
+		log.Fatal(err)
+	}
+	fmt.Printf("Read %d transactions in %s\n", len(allTrans), time.Since(start))
+	return nil
+}
+
 func main() {
 	app := cli.NewApp()
 	app.Usage = "Augment ledger"
@@ -296,6 +308,11 @@ func main() {
 			},
 			Usage:  "Process a csv file, making it ready for ledger convert",
 			Action: cmdCsv,
+		},
+		{
+			Name:   "dedup",
+			Usage:  "EXPERIMENTAL: Look for potentially duplicate postings",
+			Action: cmdDedup,
 		},
 		{
 			Name: "gmail",

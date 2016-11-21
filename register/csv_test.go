@@ -12,7 +12,7 @@ import (
 )
 
 func Test_converter_ReadSimple(t *testing.T) {
-	c := newConverter(strings.NewReader("abcdef"))
+	c := newConverter(ioutil.NopCloser(strings.NewReader("abcdef")))
 	c.buf = make([]byte, 3)
 
 	found, err := readAll(c)
@@ -21,7 +21,7 @@ func Test_converter_ReadSimple(t *testing.T) {
 }
 
 func Test_converter_ReadQuoted(t *testing.T) {
-	c := newConverter(strings.NewReader(`a"b"\c`))
+	c := newConverter(ioutil.NopCloser(strings.NewReader(`a"b"\c`)))
 	c.buf = make([]byte, 3)
 
 	found, err := readAll(c)
@@ -30,7 +30,7 @@ func Test_converter_ReadQuoted(t *testing.T) {
 }
 
 func Test_converter_ReadEscaped(t *testing.T) {
-	c := newConverter(strings.NewReader(`a"b\"\\"c`))
+	c := newConverter(ioutil.NopCloser(strings.NewReader(`a"b\"\\"c`)))
 	c.buf = make([]byte, 3)
 
 	found, err := readAll(c)

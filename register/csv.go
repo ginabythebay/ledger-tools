@@ -1,9 +1,6 @@
 package register
 
-import (
-	"fmt"
-	"io"
-)
+import "io"
 
 type state int
 
@@ -17,14 +14,14 @@ const (
 )
 
 type converter struct {
-	delegate  io.Reader
+	delegate  io.ReadCloser
 	buf       []byte // place we read into
 	remaining []byte // what is still left to be read from
 	escaped   []byte // if non-empty, contains raw bytes ready to be copied to output, before remaining
 	s         state
 }
 
-func newConverter(r io.Reader) *converter {
+func newConverter(r io.ReadCloser) *converter {
 	return &converter{
 		delegate: r,
 		buf:      make([]byte, 4092),
@@ -32,23 +29,17 @@ func newConverter(r io.Reader) *converter {
 }
 
 func (c *converter) Read(p []byte) (n int, err error) {
-	fmt.Printf("entered read.  c=%+v\n", c) // output for debug
-
 	if len(c.escaped) != 0 {
 		n = copy(p, c.escaped)
 		c.escaped = c.escaped[n:]
-		fmt.Printf("### escaped exit %d, len(c.escaped)=%d, %+v\n", n, len(c.escaped), p) // output for debug
 		return n, nil
 	}
 
 	if len(c.remaining) == 0 {
 		n, err = c.delegate.Read(c.buf)
 		if n == 0 {
-			fmt.Printf("### read error %+v\n", err) // output for debug
-
 			return n, err
 		}
-		fmt.Printf("read %d bytes from delegate\n", n) // output for debug
 		c.remaining = c.buf[:n]
 	}
 
@@ -82,11 +73,13 @@ func (c *converter) Read(p []byte) (n int, err error) {
 				c.escaped = []byte{next}
 			}
 			c.s = quoted
-			fmt.Printf("### escaping exit %d, %+v, %+v\n", i, p, err) // output for debug
 			return i, err
 		}
 	}
 
-	fmt.Printf("### normal exit %d, %+v, %+v\n", i, p, err) // output for debug
 	return i, err
+}
+
+func (c *converter) Close() error {
+	return c.delegate.Close()
 }

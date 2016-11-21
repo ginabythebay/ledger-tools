@@ -17,14 +17,11 @@ import (
 	"github.com/pkg/errors"
 )
 
-// We currently exclude notes from the output as the escaping that
-// ledger uses is not rfc 4180 compliant and if double-quotes are
-// present, they cause the csv reader to fail.
 var csvFormat = strings.Join(
 	[]string{
 		`%(quoted(filename)),`,
 		`%(quoted(xact.beg_line)),`,
-		//`%(quoted(join(xact.note))),`,
+		`%(quoted(join(xact.note))),`,
 		`%(quoted(date)),`,
 		`%(quoted(code)),`,
 		`%(quoted(payee)),`,
@@ -32,7 +29,7 @@ var csvFormat = strings.Join(
 		`%(quoted(commodity(scrub(display_amount)))),`,
 		`%(quoted(quantity(scrub(display_amount)))),`,
 		`%(quoted(cleared ? "*" : (pending ? "!" : ""))),`,
-		//`%(quoted(join(note)))`
+		`%(quoted(join(note)))`,
 		`\n`,
 	},
 	"")
@@ -41,7 +38,7 @@ var csvFormat = strings.Join(
 const (
 	colFilename = iota
 	colTransBegLine
-	//colTransNote
+	colTransNote
 	colDate
 	colCode
 	colPayee
@@ -68,6 +65,7 @@ func Read() ([]*ledgertools.Transaction, error) {
 	if err != nil {
 		return nil, errors.Wrap(err, "StdoutPipe")
 	}
+	outPipe = newConverter(outPipe)
 
 	var wg sync.WaitGroup
 	wg.Add(1)
