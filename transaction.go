@@ -16,10 +16,12 @@ const indent = "    "
 
 // Posting represents a change to an account, along with associated metadata.
 type Posting struct {
+	BegLine  int
 	Account  string
 	Currency string
 	Amount   big.Float
 	State    rune
+	Xact     *Transaction
 }
 
 func (p *Posting) String() string {
@@ -30,13 +32,18 @@ func (p *Posting) String() string {
 		prefix = indent + " " + string(p.State) + " " + p.Account
 	}
 
-	suffix := "  " + p.Currency + p.Amount.Text('f', 2)
+	suffix := "  " + p.AmountText()
 	delta := amountAlignmentCol - (utf8.RuneCountInString(prefix) + utf8.RuneCountInString(suffix))
 	var middle string
 	if delta > 0 {
 		middle = strings.Repeat(" ", delta)
 	}
 	return prefix + middle + suffix
+}
+
+// AmountText returns the currency and amount in a text format.
+func (p *Posting) AmountText() string {
+	return p.Currency + p.Amount.Text('f', 2)
 }
 
 // Transaction is group of related Postings, with an optional shared
@@ -48,7 +55,16 @@ type Transaction struct {
 	Code     string // may not be set.  The thing in parentheses.  e.g. check #
 	Payee    string
 	Notes    []string // may not be set
-	Postings []Posting
+	Postings []*Posting
+}
+
+// LinkPostings points all postings back to their parent transaction
+// and returns a pointer to that transaction.
+func (t *Transaction) LinkPostings() *Transaction {
+	for _, p := range t.Postings {
+		p.Xact = t
+	}
+	return t
 }
 
 // SyntheticTransaction creates a new Transaction
@@ -70,12 +86,13 @@ func SyntheticTransaction(date time.Time, code, payee string, notes []string, am
 		Amount:   negatedAmount,
 	}
 
-	return &Transaction{
+	t := &Transaction{
 		Date:     date,
 		Code:     code,
 		Payee:    payee,
 		Notes:    notes,
-		Postings: []Posting{cost, payment}}, nil
+		Postings: []*Posting{&cost, &payment}}
+	return t.LinkPostings(), nil
 }
 
 // NextTransaction creates the next transaction from a series of
@@ -104,10 +121,10 @@ func consolidate(imports []Flattened, end int) (*Transaction, []Flattened, error
 	}
 
 	var accum big.Float
-	var postings []Posting
+	var postings []*Posting
 	for _, f := range use {
-		p := Posting{f.Account, f.Currency, f.Amount, f.State}
-		postings = append(postings, p)
+		p := Posting{f.PostingBegLine, f.Account, f.Currency, f.Amount, f.State, nil}
+		postings = append(postings, &p)
 		accum.Add(&accum, &f.Amount)
 	}
 	if !isNearZero(accum) {
@@ -115,7 +132,7 @@ func consolidate(imports []Flattened, end int) (*Transaction, []Flattened, error
 	}
 
 	first := imports[0]
-	t := Transaction{
+	t := &Transaction{
 		first.SrcFile,
 		first.BegLine,
 		first.Date,
@@ -124,7 +141,7 @@ func consolidate(imports []Flattened, end int) (*Transaction, []Flattened, error
 		first.TransNotes,
 		postings,
 	}
-	return &t, imports[end:], nil
+	return t.LinkPostings(), imports[end:], nil
 }
 
 var nearZero big.Float
@@ -148,9 +165,13 @@ func parseAmount(s string) (currency string, amount big.Float, err error) {
 	return currency, amount, err
 }
 
+func (t *Transaction) DateText() string {
+	return t.Date.Format("2006/01/02")
+}
+
 func (t *Transaction) String() string {
 	var lines []string
-	dateText := t.Date.Format("2006/01/02")
+	dateText := t.DateText()
 	var tokens []string
 	if t.Code == "" {
 		tokens = []string{dateText, t.Payee}
@@ -180,15 +201,17 @@ type Flattened struct {
 	Payee      string
 	TransNotes []string // optional.  notes that apply to the entire transaction.
 
-	Account  string
-	Currency string // must be "$" for now
-	Amount   big.Float
-	State    rune // optional
+	PostingBegLine int
+	Account        string
+	Currency       string // must be "$" for now
+	Amount         big.Float
+	State          rune     // optional
+	PostingNotes   []string // optional
 }
 
-func NewFlattened(srcFile string, begLine int, date time.Time, code string, payee string, transNotes []string, account string, currency string, amount big.Float, state rune) Flattened {
+func NewFlattened(srcFile string, begLine int, date time.Time, code string, payee string, transNotes []string, postingBegLine int, account string, currency string, amount big.Float, state rune, postingNotes []string) Flattened {
 	return Flattened{
-		srcFile, begLine, date, code, payee, transNotes, account, currency, amount, state}
+		srcFile, begLine, date, code, payee, transNotes, postingBegLine, account, currency, amount, state, postingNotes}
 }
 
 // sameTransaction returns true if the two entries appear to be from

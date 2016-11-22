@@ -25,6 +25,7 @@ var csvFormat = strings.Join(
 		`%(quoted(date)),`,
 		`%(quoted(code)),`,
 		`%(quoted(payee)),`,
+		`%(quoted(beg_line)),`,
 		`%(quoted(display_account)),`,
 		`%(quoted(commodity(scrub(display_amount)))),`,
 		`%(quoted(quantity(scrub(display_amount)))),`,
@@ -42,6 +43,7 @@ const (
 	colDate
 	colCode
 	colPayee
+	colBegLine
 	colAccount
 	colCurrency
 	colAmount
@@ -150,6 +152,10 @@ func parse(record []string) (ledgertools.Flattened, error) {
 	if err != nil {
 		return f, errors.Wrapf(err, "convert %s to int", record[colTransBegLine])
 	}
+	postingBeginLine, err := strconv.Atoi(record[colBegLine])
+	if err != nil {
+		return f, errors.Wrapf(err, "convert %s to int", record[colBegLine])
+	}
 
 	var date time.Time
 	date, err = time.Parse(dateLayout, record[colDate])
@@ -157,8 +163,8 @@ func parse(record []string) (ledgertools.Flattened, error) {
 		return f, errors.Wrapf(err, "convert %s to date", record[colDate])
 	}
 
-	//transNote := strings.Split(record[colTransNote], "\n")
-	transNote := []string{}
+	transNote := strings.Split(record[colTransNote], "\n")
+	postingNote := strings.Split(record[colPostingNote], "\n")
 
 	var amount big.Float
 	if _, ok := amount.SetString(record[colAmount]); !ok {
@@ -179,10 +185,12 @@ func parse(record []string) (ledgertools.Flattened, error) {
 		record[colCode],
 		record[colPayee],
 		transNote,
+		postingBeginLine,
 		record[colAccount],
 		record[colCurrency],
 		amount,
 		state,
+		postingNote,
 	)
 	return f, nil
 }
