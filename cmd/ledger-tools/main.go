@@ -288,12 +288,11 @@ func cmdDedup(c *cli.Context) (result error) {
 	finder := dup.NewFinder(3)
 	for _, t := range allTrans {
 		for _, p := range t.Postings {
-			matches := finder.Add(p)
-			for _, m := range matches {
-				fmt.Printf("Apparent duplicate %s %s\n\tat %s %s(%s:%d)\n\tat %s %s(%s:%d)\n", p.AmountText(), p.Account, m.Xact.DateText(), m.Xact.Payee, m.Xact.SrcFile, m.BegLine, p.Xact.DateText(), p.Xact.Payee, p.Xact.SrcFile, p.BegLine)
-				matchCount++
-			}
+			finder.Add(p)
 		}
+	}
+	for _, p := range finder.AllPairs {
+		fmt.Println(p.CompilerText())
 	}
 
 	fmt.Printf("\n %d total potential duplicates found\n", matchCount)
