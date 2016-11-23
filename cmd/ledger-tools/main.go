@@ -292,7 +292,12 @@ func cmdDedup(c *cli.Context) (result error) {
 		}
 	}
 	for _, p := range finder.AllPairs {
-		fmt.Println(p.CompilerText())
+		s, err := p.CompilerText()
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		fmt.Println(s)
 	}
 
 	fmt.Printf("\n %d total potential duplicates found\n", matchCount)

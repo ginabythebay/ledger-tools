@@ -1,11 +1,19 @@
 package dup
 
 import (
-	"fmt"
+	"bytes"
+	"strings"
+	"text/template"
 	"time"
 
 	ledgertools "github.com/ginabythebay/ledger-tools"
 )
+
+var compilerTemplate = template.Must(template.New("CompilerOutput").Parse(strings.TrimSpace(`
+Apparent duplicate {{.One.AmountText}} {{.One.Account}}
+	at {{.One.Xact.DateText}} {{.One.Xact.Payee}} ({{.One.Xact.SrcFile}}:{{.One.BegLine}})
+	at {{.Two.Xact.DateText}} {{.Two.Xact.Payee}} ({{.Two.Xact.SrcFile}}:{{.Two.BegLine}})
+`)))
 
 type key struct {
 	account string
@@ -18,13 +26,14 @@ func newKey(account, amount string, t time.Time) key {
 }
 
 type Pair struct {
-	First  *ledgertools.Posting
-	Second *ledgertools.Posting
+	One *ledgertools.Posting
+	Two *ledgertools.Posting
 }
 
-func (p Pair) CompilerText() string {
-	return fmt.Sprintf("Apparent duplicate %s %s\n\tat %s %s(%s:%d)\n\tat %s %s(%s:%d)", p.First.AmountText(), p.First.Account, p.Second.Xact.DateText(), p.Second.Xact.Payee, p.Second.Xact.SrcFile, p.Second.BegLine, p.First.Xact.DateText(), p.First.Xact.Payee, p.First.Xact.SrcFile, p.First.BegLine)
-
+func (p Pair) CompilerText() (string, error) {
+	var buf bytes.Buffer
+	err := compilerTemplate.Execute(&buf, p)
+	return buf.String(), err
 }
 
 // Finder tracks postings and looks for potential duplicates, based on the amount and the date.
@@ -65,7 +74,7 @@ func (f *Finder) Add(p *ledgertools.Posting) {
 	}
 
 	for _, m := range matches {
-		f.AllPairs = append(f.AllPairs, Pair{p, m})
+		f.AllPairs = append(f.AllPairs, Pair{m, p})
 	}
 
 	f.m[k] = append(f.m[k], p)
