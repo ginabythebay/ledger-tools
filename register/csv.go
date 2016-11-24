@@ -67,9 +67,12 @@ func (c *converter) Read(p []byte) (n int, err error) {
 				i++
 			}
 		case escape:
-			if next == '"' {
+			switch next {
+			case '"':
 				c.escaped = []byte{'"', '"'}
-			} else {
+			case 'n':
+				c.escaped = []byte{'\n'}
+			default:
 				c.escaped = []byte{next}
 			}
 			c.s = quoted
