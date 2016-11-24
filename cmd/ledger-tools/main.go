@@ -292,6 +292,9 @@ func cmdDedup(c *cli.Context) (result error) {
 		}
 	}
 	for _, p := range finder.AllPairs {
+		if p.IsSuppressed() {
+			continue
+		}
 		s, err := p.CompilerText()
 		if err != nil {
 			log.Fatal(err)

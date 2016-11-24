@@ -21,6 +21,7 @@ type Posting struct {
 	Currency string
 	Amount   big.Float
 	State    rune
+	Notes    []string
 	Xact     *Transaction
 }
 
@@ -123,7 +124,7 @@ func consolidate(imports []Flattened, end int) (*Transaction, []Flattened, error
 	var accum big.Float
 	var postings []*Posting
 	for _, f := range use {
-		p := Posting{f.PostingBegLine, f.Account, f.Currency, f.Amount, f.State, nil}
+		p := Posting{f.PostingBegLine, f.Account, f.Currency, f.Amount, f.State, f.PostingNotes, nil}
 		postings = append(postings, &p)
 		accum.Add(&accum, &f.Amount)
 	}

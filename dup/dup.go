@@ -25,6 +25,34 @@ func newKey(account, amount string, t time.Time) key {
 	return key{account, amount, t.Format("2006/01/02")}
 }
 
+func suppressedDates(notes []string) []string {
+	var dates []string
+	for _, line := range notes {
+		split := strings.SplitAfterN(line, "SuppressDuplicates:", 2)
+		if len(split) != 2 {
+			continue
+		}
+		someCandidates := strings.Split(split[1], ",")
+		for _, c := range someCandidates {
+			c = strings.TrimSpace(c)
+			_, err := time.Parse("2006/01/02", c)
+			if err == nil {
+				dates = append(dates, c)
+			}
+		}
+	}
+	return dates
+}
+
+func isDateSuppressed(date string, notes []string) bool {
+	for _, d := range suppressedDates(notes) {
+		if date == d {
+			return true
+		}
+	}
+	return false
+}
+
 type Pair struct {
 	One *ledgertools.Posting
 	Two *ledgertools.Posting
@@ -34,6 +62,10 @@ func (p Pair) CompilerText() (string, error) {
 	var buf bytes.Buffer
 	err := compilerTemplate.Execute(&buf, p)
 	return buf.String(), err
+}
+
+func (p Pair) IsSuppressed() bool {
+	return isDateSuppressed(p.One.Xact.DateText(), p.Two.Notes) || isDateSuppressed(p.Two.Xact.DateText(), p.One.Notes)
 }
 
 // Finder tracks postings and looks for potential duplicates, based on the amount and the date.
