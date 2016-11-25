@@ -290,18 +290,12 @@ func cmdLint(c *cli.Context) (result error) {
 			finder.Add(p)
 		}
 	}
-	matchCount := 0
-	for _, p := range finder.AllPairs {
-		s, err := p.CompilerText()
-		if err != nil {
-			log.Fatal(err)
-		}
-		matchCount++
 
-		fmt.Println(s)
+	write := dup.JavacWriter(finder.AllPairs, os.Stdout)
+	err = write()
+	if err != nil {
+		log.Fatal(err)
 	}
-
-	fmt.Printf("\n %d potential duplicates found\n", matchCount)
 
 	return nil
 }

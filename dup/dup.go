@@ -2,6 +2,8 @@ package dup
 
 import (
 	"bytes"
+	"fmt"
+	"io"
 	"strings"
 	"text/template"
 	"time"
@@ -10,7 +12,7 @@ import (
 )
 
 var compilerTemplate = template.Must(template.New("CompilerOutput").Parse(strings.TrimSpace(`
-Apparent duplicate {{.One.AmountText}} {{.One.Account}}
+Possible duplicate {{.One.AmountText}} {{.One.Account}}
 	at {{.One.Xact.DateText}} {{.One.Xact.Payee}} ({{.One.Xact.SrcFile}}:{{.One.BegLine}})
 	at {{.Two.Xact.DateText}} {{.Two.Xact.Payee}} ({{.Two.Xact.SrcFile}}:{{.Two.BegLine}})
 `)))
@@ -113,4 +115,24 @@ func (f *Finder) Add(p *ledgertools.Posting) {
 	}
 
 	f.m[k] = append(f.m[k], p)
+}
+
+type Writer func() error
+
+func JavacWriter(allPairs []Pair, w io.Writer) Writer {
+	return func() error {
+		matchCount := 0
+		for _, p := range allPairs {
+			s, err := p.CompilerText()
+			if err != nil {
+				return err
+			}
+			matchCount++
+
+			fmt.Fprintln(w, s)
+		}
+
+		fmt.Fprintf(w, "\n %d potential duplicates found\n", matchCount)
+		return nil
+	}
 }
