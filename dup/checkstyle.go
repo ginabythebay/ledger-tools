@@ -22,16 +22,16 @@ type checkstyle struct {
 
 type file struct {
 	XMLName xml.Name `xml:"file"`
-	Name    string   `xml:"name"`
+	Name    string   `xml:"name,attr"`
 	Errors  []xmlError
 }
 
 type xmlError struct {
 	XMLName  xml.Name `xml:"error"`
-	Line     int      `xml:"line"`
-	Severity string   `xml:"severity"`
-	Message  string   `xml:"message"`
-	Source   string   `xml:"source"`
+	Line     int      `xml:"line,attr"`
+	Severity string   `xml:"severity,attr"`
+	Message  string   `xml:"message,attr"`
+	Source   string   `xml:"source,attr"`
 }
 
 func CheckStyleWriter(allPairs []Pair, w io.Writer) Writer {
