@@ -37,12 +37,21 @@ func suppressedDates(notes []string) []string {
 		someCandidates := strings.Split(split[1], ",")
 		for _, c := range someCandidates {
 			c = strings.TrimSpace(c)
-			_, err := time.Parse("2006/01/02", c)
+			if len(c) < 10 {
+				// dates are 10 characters long.
+				break
+			}
+			_, err := time.Parse("2006/01/02", c[:10])
 			if err == nil {
-				dates = append(dates, c)
+				dates = append(dates, c[:10])
+			}
+			if len(c) > 10 {
+				// sometimes there is glop after a valid date.  If we hit that case, just bail out until the next line
+				break
 			}
 		}
 	}
+
 	return dates
 }
 
