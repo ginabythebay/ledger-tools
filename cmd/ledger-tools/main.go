@@ -277,12 +277,15 @@ func cmdCsv(c *cli.Context) (result error) {
 }
 
 func cmdLint(c *cli.Context) (result error) {
+	checkStyle := c.Bool("checkstyle")
 	start := time.Now()
 	allTrans, err := register.Read()
 	if err != nil {
 		log.Fatal(err)
 	}
-	fmt.Printf("Read %d transactions in %s\n", len(allTrans), time.Since(start))
+	if !checkStyle {
+		fmt.Printf("Read %d transactions in %s\n", len(allTrans), time.Since(start))
+	}
 
 	finder := dup.NewFinder(c.Int("dupdays"))
 	for _, t := range allTrans {
@@ -291,7 +294,12 @@ func cmdLint(c *cli.Context) (result error) {
 		}
 	}
 
-	write := dup.JavacWriter(finder.AllPairs, os.Stdout)
+	var write dup.Writer
+	if checkStyle {
+		write = dup.CheckStyleWriter(finder.AllPairs, os.Stdout)
+	} else {
+		write = dup.JavacWriter(finder.AllPairs, os.Stdout)
+	}
 	err = write()
 	if err != nil {
 		log.Fatal(err)
@@ -333,6 +341,10 @@ func main() {
 					Name:  "d, dupdays",
 					Value: 3,
 					Usage: "Number of days to consider when looking for possible duplicate postings.  A value of 0 will consider only same-day postings.",
+				},
+				cli.BoolFlag{
+					Name:  "c, checkstyle",
+					Usage: "Uses checkstyle-compatible output",
 				},
 			},
 		},
