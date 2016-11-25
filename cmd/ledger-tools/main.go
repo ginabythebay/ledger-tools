@@ -284,23 +284,24 @@ func cmdLint(c *cli.Context) (result error) {
 	}
 	fmt.Printf("Read %d transactions in %s\n", len(allTrans), time.Since(start))
 
-	matchCount := 0
-	finder := dup.NewFinder(3)
+	finder := dup.NewFinder(c.Int("dupdays"))
 	for _, t := range allTrans {
 		for _, p := range t.Postings {
 			finder.Add(p)
 		}
 	}
+	matchCount := 0
 	for _, p := range finder.AllPairs {
 		s, err := p.CompilerText()
 		if err != nil {
 			log.Fatal(err)
 		}
+		matchCount++
 
 		fmt.Println(s)
 	}
 
-	fmt.Printf("\n %d total potential duplicates found\n", matchCount)
+	fmt.Printf("\n %d potential duplicates found\n", matchCount)
 
 	return nil
 }
@@ -333,6 +334,13 @@ func main() {
 			Name:   "lint",
 			Usage:  "EXPERIMENTAL: Look for potentially duplicate postings",
 			Action: cmdLint,
+			Flags: []cli.Flag{
+				cli.IntFlag{
+					Name:  "d, dupdays",
+					Value: 3,
+					Usage: "Number of days to consider when looking for possible duplicate postings.  A value of 0 will consider only same-day postings.",
+				},
+			},
 		},
 		{
 			Name: "gmail",
