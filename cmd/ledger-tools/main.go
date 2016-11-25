@@ -276,7 +276,7 @@ func cmdCsv(c *cli.Context) (result error) {
 	return nil
 }
 
-func cmdDedup(c *cli.Context) (result error) {
+func cmdLint(c *cli.Context) (result error) {
 	start := time.Now()
 	allTrans, err := register.Read()
 	if err != nil {
@@ -292,9 +292,6 @@ func cmdDedup(c *cli.Context) (result error) {
 		}
 	}
 	for _, p := range finder.AllPairs {
-		if p.IsSuppressed() {
-			continue
-		}
 		s, err := p.CompilerText()
 		if err != nil {
 			log.Fatal(err)
@@ -333,9 +330,9 @@ func main() {
 			Action: cmdCsv,
 		},
 		{
-			Name:   "dedup",
+			Name:   "lint",
 			Usage:  "EXPERIMENTAL: Look for potentially duplicate postings",
-			Action: cmdDedup,
+			Action: cmdLint,
 		},
 		{
 			Name: "gmail",

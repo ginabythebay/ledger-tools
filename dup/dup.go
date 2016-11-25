@@ -106,7 +106,10 @@ func (f *Finder) Add(p *ledgertools.Posting) {
 	}
 
 	for _, m := range matches {
-		f.AllPairs = append(f.AllPairs, Pair{m, p})
+		p := Pair{m, p}
+		if !p.IsSuppressed() {
+			f.AllPairs = append(f.AllPairs, p)
+		}
 	}
 
 	f.m[k] = append(f.m[k], p)
