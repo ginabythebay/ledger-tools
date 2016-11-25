@@ -279,7 +279,7 @@ func cmdCsv(c *cli.Context) (result error) {
 func cmdLint(c *cli.Context) (result error) {
 	checkStyle := c.Bool("checkstyle")
 	start := time.Now()
-	allTrans, err := register.Read()
+	allTrans, err := register.Read(c.String("file"))
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -345,6 +345,10 @@ func main() {
 				cli.BoolFlag{
 					Name:  "c, checkstyle",
 					Usage: "Uses checkstyle-compatible output",
+				},
+				cli.StringFlag{
+					Name:  "f, file",
+					Usage: "Name of file to lint.  If not specified, the default ledger file will be used.",
 				},
 			},
 		},

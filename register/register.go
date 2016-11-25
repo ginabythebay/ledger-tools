@@ -54,14 +54,16 @@ const (
 const dateLayout = "2006/01/02"
 
 // Read reads the default register file.  Depends on calling ledger.
-func Read() ([]*ledgertools.Transaction, error) {
+func Read(filename string) ([]*ledgertools.Transaction, error) {
 	ledger, err := exec.LookPath("ledger")
 	if err != nil {
 		return nil, errors.Wrap(err, "lookpath")
 	}
 
 	cmd := exec.Command(ledger, "csv", "--csv-format", csvFormat)
-	cmd.Env = os.Environ()
+	if filename != "" {
+		cmd.Args = append(cmd.Args, "-f", filename)
+	}
 
 	outPipe, err := cmd.StdoutPipe()
 	if err != nil {
