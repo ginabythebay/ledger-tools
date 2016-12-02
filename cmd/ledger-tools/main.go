@@ -289,9 +289,7 @@ func cmdLint(c *cli.Context) (result error) {
 
 	finder := dup.NewFinder(c.Int("dupdays"))
 	for _, t := range allTrans {
-		for _, p := range t.Postings {
-			finder.Add(p)
-		}
+		finder.Add(t)
 	}
 
 	var write dup.Writer

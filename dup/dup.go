@@ -97,9 +97,15 @@ func NewFinder(days int) *Finder {
 	}
 }
 
-// Add adds p and tracks any existing postings that have the same amount and
-// are within the configured number of days.
-func (f *Finder) Add(p *ledgertools.Posting) {
+// Add adds t and its postings and tracks any existing postings that
+// have the same amount and are within the configured number of days.
+func (f *Finder) Add(t *ledgertools.Transaction) {
+	for _, p := range t.Postings {
+		f.addPosting(p)
+	}
+}
+
+func (f *Finder) addPosting(p *ledgertools.Posting) {
 	var matches []*ledgertools.Posting
 	t := p.Xact.Date
 	amount := p.AmountText()
