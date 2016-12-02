@@ -69,8 +69,6 @@ func Read(filename string) ([]*ledgertools.Transaction, error) {
 	if err != nil {
 		return nil, errors.Wrap(err, "StdoutPipe")
 	}
-	outPipe = newConverter(outPipe)
-
 	var wg sync.WaitGroup
 	wg.Add(1)
 
@@ -84,48 +82,7 @@ func Read(filename string) ([]*ledgertools.Transaction, error) {
 			wg.Done()
 		}()
 
-		// TODO(gina) look into reworking NextTransaction api to be
-		// more stream-friendly.  Currently we read everything into
-		// memory as Flatteneds so we can convert that to another
-		// entire in-memory version, of Transactions
-
-		var allFlattened []ledgertools.Flattened
-		r := csv.NewReader(outPipe)
-		for {
-			var record []string
-			record, err = r.Read()
-			if err == io.EOF {
-				break
-			}
-			if err != nil {
-				readErr = errors.Wrap(err, "csv read")
-				return
-			}
-
-			// TODO(gina) look into using string interning here.
-			// Except for notes, we are going to see lots of the same
-			// strings over and over and we don't need to put so much
-			// memory pressure on the runtime for immutable data.
-
-			var f ledgertools.Flattened
-			f, err = parse(record)
-			if err != nil {
-				readErr = errors.Wrap(err, "parse")
-				return
-			}
-
-			allFlattened = append(allFlattened, f)
-		}
-
-		for len(allFlattened) != 0 {
-			var t *ledgertools.Transaction
-			t, allFlattened, err = ledgertools.NextTransaction(allFlattened)
-			if err != nil {
-				readErr = errors.Wrap(err, "NextTransaction")
-				return
-			}
-			result = append(result, t)
-		}
+		result, readErr = ReadLedgerCsv(outPipe)
 	}()
 
 	errPipe, err := cmd.StderrPipe()
@@ -143,6 +100,55 @@ func Read(filename string) ([]*ledgertools.Transaction, error) {
 	wg.Wait()
 	if readErr != nil {
 		return nil, errors.Wrap(readErr, "read")
+	}
+
+	return result, nil
+}
+
+// ReadLedgerCsv knows how to read ledger-style csv files (where
+// things are escaped by backlslashes)
+func ReadLedgerCsv(source io.ReadCloser) ([]*ledgertools.Transaction, error) {
+	var result []*ledgertools.Transaction
+	converted := newConverter(source)
+
+	// TODO(gina) look into reworking NextTransaction api to be
+	// more stream-friendly.  Currently we read everything into
+	// memory as Flatteneds so we can convert that to another
+	// entire in-memory version, of Transactions
+
+	var allFlattened []ledgertools.Flattened
+	r := csv.NewReader(converted)
+	for {
+		record, err := r.Read()
+		if err == io.EOF {
+			break
+		}
+		if err != nil {
+			return nil, errors.Wrap(err, "csv read")
+		}
+
+		// TODO(gina) look into using string interning here.
+		// Except for notes, we are going to see lots of the same
+		// strings over and over and we don't need to put so much
+		// memory pressure on the runtime for immutable data.
+
+		var f ledgertools.Flattened
+		f, err = parse(record)
+		if err != nil {
+			return nil, errors.Wrap(err, "parse")
+		}
+
+		allFlattened = append(allFlattened, f)
+	}
+
+	for len(allFlattened) != 0 {
+		var t *ledgertools.Transaction
+		var err error
+		t, allFlattened, err = ledgertools.NextTransaction(allFlattened)
+		if err != nil {
+			return nil, errors.Wrap(err, "NextTransaction")
+		}
+		result = append(result, t)
 	}
 
 	return result, nil

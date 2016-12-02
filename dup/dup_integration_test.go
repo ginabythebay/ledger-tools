@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"fmt"
 	"io/ioutil"
-	"os"
 	"path/filepath"
 	"reflect"
 	"runtime"
@@ -15,35 +14,18 @@ import (
 	"github.com/ginabythebay/ledger-tools/register"
 )
 
-var fileText = strings.TrimSpace(`
-commodity $
-
-account Expenses:Grocery
-account Liabilities:Another Credit Card
-account Liabilities:Credit Card
-
-tag SuppressDuplicates
-
-2016/03/21 Local Grocery Store
-    Expenses:Grocery                          $10.00
-    Liabilities:Credit Card
-
-2016/03/22 Another Local Grocery Store
-    Expenses:Grocery                          $10.00
-    Liabilities:Another Credit Card
-
-2016/03/25 Another Local Grocery Store
-    Expenses:Grocery                          $10.00
-    ; SuppressDuplicates: 2016/03/22
-    Liabilities:Credit Card
-
-2016/04/21 Another Local Grocery Store
-    Expenses:Grocery                          $10.00
-    Liabilities:Another Credit Card
-`)
+var csvText = strings.TrimSpace(`
+"register.ledger","9","","2016/03/21","","Local Grocery Store","10","Expenses:Grocery","$","10","",""
+"register.ledger","9","","2016/03/21","","Local Grocery Store","11","Liabilities:Credit Card","$","-10","",""
+"register.ledger","13","","2016/03/22","","Another Local Grocery Store","14","Expenses:Grocery","$","10","",""
+"register.ledger","13","","2016/03/22","","Another Local Grocery Store","15","Liabilities:Another Credit Card","$","-10","",""
+"register.ledger","17","","2016/03/25","","Another Local Grocery Store","18","Expenses:Grocery","$","10",""," SuppressDuplicates: 2016/03/22"
+"register.ledger","17","","2016/03/25","","Another Local Grocery Store","20","Liabilities:Credit Card","$","-10","",""
+"register.ledger","22","","2016/04/21","","Another Local Grocery Store","23","Expenses:Grocery","$","10","",""
+"register.ledger","22","","2016/04/21","","Another Local Grocery Store","24","Liabilities:Another Credit Card","$","-10","",""`)
 
 func Test_JavacIntegration(t *testing.T) {
-	allTrans, fileName := readRegister(t, fileText)
+	allTrans := readRegister(t, csvText)
 
 	finder := NewFinder(3)
 	for _, t := range allTrans {
@@ -54,35 +36,20 @@ func Test_JavacIntegration(t *testing.T) {
 	write := JavacWriter(finder.AllPairs, &b)
 	ok(t, write())
 
-	exp := fmt.Sprintf(strings.TrimSpace(`
+	exp := strings.TrimSpace(`
 Possible duplicate $10.00 Expenses:Grocery
-	at 2016/03/21 Local Grocery Store (%s:10)
-	at 2016/03/22 Another Local Grocery Store (%s:14)
+	at 2016/03/21 Local Grocery Store (register.ledger:10)
+	at 2016/03/22 Another Local Grocery Store (register.ledger:14)
 
- 1 potential duplicates found`), fileName, fileName)
+ 1 potential duplicates found`)
 	equals(t, exp, strings.TrimSpace(b.String()))
 }
 
-func readRegister(t *testing.T, s string) ([]*ledgertools.Transaction, string) {
-	f, err := ioutil.TempFile("", "testregister")
-	tempName := f.Name()
-	ok(t, err)
-	defer func() {
-		ok(t, os.Remove(tempName))
-	}()
+func readRegister(t *testing.T, s string) []*ledgertools.Transaction {
 
-	b := []byte(s)
-	for len(b) != 0 {
-		var n int
-		n, err = f.Write(b)
-		ok(t, err)
-		b = b[n:]
-	}
-	ok(t, f.Close())
-
-	allTrans, err := register.Read(tempName)
+	allTrans, err := register.ReadLedgerCsv(ioutil.NopCloser(strings.NewReader(s)))
 	ok(t, err)
-	return allTrans, tempName
+	return allTrans
 }
 
 // assert fails the test if the condition is false.
