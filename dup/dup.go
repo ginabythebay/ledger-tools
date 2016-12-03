@@ -15,14 +15,14 @@ const (
 	suppressCodeDuplicates   = "SuppressCodeDuplicates:"
 )
 
-type key struct {
+type amountKey struct {
 	account string
 	amount  string
 	date    string
 }
 
-func newKey(account, amount string, t time.Time) key {
-	return key{account, amount, t.Format("2006/01/02")}
+func newAmountKey(account, amount string, t time.Time) amountKey {
+	return amountKey{account, amount, t.Format("2006/01/02")}
 }
 
 func suppressedDates(suppressPrefix string, notes []string) []string {
@@ -73,7 +73,7 @@ type Finder struct {
 	// # days to use when looking for matches.  0 means only look for matches on exactly the same day
 	Days int
 
-	m map[key][]*ledgertools.Posting
+	amountMap map[amountKey][]*ledgertools.Posting
 
 	allDuplicates []duplicate
 }
@@ -81,8 +81,8 @@ type Finder struct {
 // NewFinder creates a new Finder.
 func NewFinder(days int) *Finder {
 	return &Finder{
-		Days: days,
-		m:    make(map[key][]*ledgertools.Posting),
+		Days:      days,
+		amountMap: make(map[amountKey][]*ledgertools.Posting),
 	}
 }
 
@@ -90,25 +90,25 @@ func NewFinder(days int) *Finder {
 // have the same amount and are within the configured number of days.
 func (f *Finder) Add(t *ledgertools.Transaction) {
 	for _, p := range t.Postings {
-		f.addPosting(p)
+		f.addAmountPosting(p)
 	}
 }
 
-func (f *Finder) addPosting(p *ledgertools.Posting) {
+func (f *Finder) addAmountPosting(p *ledgertools.Posting) {
 	var matches []*ledgertools.Posting
 	t := p.Xact.Date
 	amount := p.AmountText()
-	k := newKey(p.Account, amount, t)
+	k := newAmountKey(p.Account, amount, t)
 
 	if f.Days >= 0 {
-		matches = append(matches, f.m[k]...)
+		matches = append(matches, f.amountMap[k]...)
 	}
 	for i := 1; i <= f.Days; i++ {
 		before := t.AddDate(0, 0, -i)
-		matches = append(matches, f.m[newKey(p.Account, amount, before)]...)
+		matches = append(matches, f.amountMap[newAmountKey(p.Account, amount, before)]...)
 
 		after := t.AddDate(0, 0, i)
-		matches = append(matches, f.m[newKey(p.Account, amount, after)]...)
+		matches = append(matches, f.amountMap[newAmountKey(p.Account, amount, after)]...)
 	}
 
 	for _, m := range matches {
@@ -118,7 +118,7 @@ func (f *Finder) addPosting(p *ledgertools.Posting) {
 		}
 	}
 
-	f.m[k] = append(f.m[k], p)
+	f.amountMap[k] = append(f.amountMap[k], p)
 }
 
 // WriteJavacStyle writes javac-style output for all duplicates found.
