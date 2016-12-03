@@ -12,6 +12,11 @@ import (
 	ledgertools "github.com/ginabythebay/ledger-tools"
 )
 
+const (
+	suppressAmountDuplicates = "SuppressAmountDuplicates:"
+	suppressCodeDuplicates   = "SuppressCodeDuplicates:"
+)
+
 var compilerTemplate = template.Must(template.New("CompilerOutput").Parse(strings.TrimSpace(`
 Possible duplicate {{.One.AmountText}} {{.One.Account}}
 	at {{.One.Xact.DateText}} {{.One.Xact.Payee}} ({{.One.Xact.SrcFile}}:{{.One.BegLine}})
@@ -28,10 +33,10 @@ func newKey(account, amount string, t time.Time) key {
 	return key{account, amount, t.Format("2006/01/02")}
 }
 
-func suppressedDates(notes []string) []string {
+func suppressedDates(suppressPrefix string, notes []string) []string {
 	var dates []string
 	for _, line := range notes {
-		split := strings.SplitAfterN(line, "SuppressAmountDuplicates:", 2)
+		split := strings.SplitAfterN(line, suppressPrefix, 2)
 		if len(split) != 2 {
 			continue
 		}
@@ -56,8 +61,8 @@ func suppressedDates(notes []string) []string {
 	return dates
 }
 
-func isDateSuppressed(date string, notes []string) bool {
-	for _, d := range suppressedDates(notes) {
+func isDateSuppressed(date string, suppressPrefix string, notes []string) bool {
+	for _, d := range suppressedDates(suppressPrefix, notes) {
 		if date == d {
 			return true
 		}
@@ -71,22 +76,30 @@ type duplicate interface {
 	accumXMLErrors(accum map[string]*file)
 }
 
-type Pair struct {
+type amountPair struct {
 	One *ledgertools.Posting
 	Two *ledgertools.Posting
 }
 
-func (p Pair) compilerText() (string, error) {
+func (p amountPair) compilerText() (string, error) {
 	var buf bytes.Buffer
 	err := compilerTemplate.Execute(&buf, p)
 	return buf.String(), err
 }
 
-func (p Pair) isSuppressed() bool {
-	return isDateSuppressed(p.One.Xact.DateText(), p.Two.Notes) || isDateSuppressed(p.Two.Xact.DateText(), p.One.Notes)
+func (p amountPair) isSuppressed() bool {
+	return isDateSuppressed(
+		p.One.Xact.DateText(),
+		suppressAmountDuplicates,
+		p.Two.Notes,
+	) || isDateSuppressed(
+		p.Two.Xact.DateText(),
+		suppressAmountDuplicates,
+		p.One.Notes,
+	)
 }
 
-func (p Pair) accumXMLErrors(accum map[string]*file) {
+func (p amountPair) accumXMLErrors(accum map[string]*file) {
 	addXMLError(accum, p.One, p.Two)
 	addXMLError(accum, p.Two, p.One)
 }
@@ -152,7 +165,7 @@ func (f *Finder) addPosting(p *ledgertools.Posting) {
 	}
 
 	for _, m := range matches {
-		p := Pair{m, p}
+		p := amountPair{m, p}
 		if !p.isSuppressed() {
 			f.allDuplicates = append(f.allDuplicates, p)
 		}

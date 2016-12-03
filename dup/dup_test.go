@@ -33,7 +33,7 @@ func Test_suppressedDates(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(strings.Join(tt.notes, "_"), func(t *testing.T) {
-			if got := suppressedDates(tt.notes); !reflect.DeepEqual(got, tt.want) {
+			if got := suppressedDates(suppressAmountDuplicates, tt.notes); !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("SuppressAmountDuplicates() = %v, want %v", got, tt.want)
 			}
 		})
