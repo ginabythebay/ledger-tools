@@ -2,10 +2,7 @@ package dup
 
 import (
 	"encoding/xml"
-	"fmt"
 	"io"
-
-	ledgertools "github.com/ginabythebay/ledger-tools"
 )
 
 const (
@@ -34,12 +31,11 @@ type xmlError struct {
 	Source   string   `xml:"source,attr"`
 }
 
-func CheckStyleWriter(allPairs []Pair, w io.Writer) Writer {
+func CheckStyleWriter(allDuplicates []Duplicate, w io.Writer) Writer {
 	return func() error {
 		accum := map[string]*file{}
-		for _, p := range allPairs {
-			add(accum, p.One, p.Two)
-			add(accum, p.Two, p.One)
+		for _, d := range allDuplicates {
+			d.accumXMLErrors(accum)
 		}
 
 		var allFiles []*file
@@ -54,21 +50,4 @@ func CheckStyleWriter(allPairs []Pair, w io.Writer) Writer {
 		enc.Indent("", "  ")
 		return enc.Encode(&cs)
 	}
-}
-
-func add(accum map[string]*file, p, other *ledgertools.Posting) {
-	f, ok := accum[p.Xact.SrcFile]
-	if !ok {
-		f = &file{
-			Name: p.Xact.SrcFile,
-		}
-		accum[p.Xact.SrcFile] = f
-	}
-	msg := fmt.Sprintf("Possible duplicate of %s %s %s at %s:%d", other.Xact.DateText(), other.AmountText(), other.Account, other.Xact.SrcFile, other.BegLine)
-	f.Errors = append(f.Errors, xmlError{
-		Line:     p.BegLine,
-		Severity: severity,
-		Message:  msg,
-		Source:   source,
-	})
 }

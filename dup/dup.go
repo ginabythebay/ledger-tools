@@ -64,19 +64,47 @@ func isDateSuppressed(date string, notes []string) bool {
 	return false
 }
 
+type Duplicate interface {
+	compilerText() (string, error)
+	isSuppressed() bool
+	accumXMLErrors(accum map[string]*file)
+}
+
 type Pair struct {
 	One *ledgertools.Posting
 	Two *ledgertools.Posting
 }
 
-func (p Pair) CompilerText() (string, error) {
+func (p Pair) compilerText() (string, error) {
 	var buf bytes.Buffer
 	err := compilerTemplate.Execute(&buf, p)
 	return buf.String(), err
 }
 
-func (p Pair) IsSuppressed() bool {
+func (p Pair) isSuppressed() bool {
 	return isDateSuppressed(p.One.Xact.DateText(), p.Two.Notes) || isDateSuppressed(p.Two.Xact.DateText(), p.One.Notes)
+}
+
+func (p Pair) accumXMLErrors(accum map[string]*file) {
+	addXMLError(accum, p.One, p.Two)
+	addXMLError(accum, p.Two, p.One)
+}
+
+func addXMLError(accum map[string]*file, p, other *ledgertools.Posting) {
+	f, ok := accum[p.Xact.SrcFile]
+	if !ok {
+		f = &file{
+			Name: p.Xact.SrcFile,
+		}
+		accum[p.Xact.SrcFile] = f
+	}
+	msg := fmt.Sprintf("Possible duplicate of %s %s %s at %s:%d", other.Xact.DateText(), other.AmountText(), other.Account, other.Xact.SrcFile, other.BegLine)
+	f.Errors = append(f.Errors, xmlError{
+		Line:     p.BegLine,
+		Severity: severity,
+		Message:  msg,
+		Source:   source,
+	})
 }
 
 // Finder tracks postings and looks for potential duplicates, based on the amount and the date.
@@ -86,7 +114,7 @@ type Finder struct {
 
 	m map[key][]*ledgertools.Posting
 
-	AllPairs []Pair
+	AllDuplicates []Duplicate
 }
 
 // NewFinder creates a new Finder.
@@ -124,8 +152,8 @@ func (f *Finder) addPosting(p *ledgertools.Posting) {
 
 	for _, m := range matches {
 		p := Pair{m, p}
-		if !p.IsSuppressed() {
-			f.AllPairs = append(f.AllPairs, p)
+		if !p.isSuppressed() {
+			f.AllDuplicates = append(f.AllDuplicates, p)
 		}
 	}
 
@@ -134,11 +162,11 @@ func (f *Finder) addPosting(p *ledgertools.Posting) {
 
 type Writer func() error
 
-func JavacWriter(allPairs []Pair, w io.Writer) Writer {
+func JavacWriter(allDuplicates []Duplicate, w io.Writer) Writer {
 	return func() error {
 		matchCount := 0
-		for _, p := range allPairs {
-			s, err := p.CompilerText()
+		for _, d := range allDuplicates {
+			s, err := d.compilerText()
 			if err != nil {
 				return err
 			}

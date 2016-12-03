@@ -294,9 +294,9 @@ func cmdLint(c *cli.Context) (result error) {
 
 	var write dup.Writer
 	if checkStyle {
-		write = dup.CheckStyleWriter(finder.AllPairs, os.Stdout)
+		write = dup.CheckStyleWriter(finder.AllDuplicates, os.Stdout)
 	} else {
-		write = dup.JavacWriter(finder.AllPairs, os.Stdout)
+		write = dup.JavacWriter(finder.AllDuplicates, os.Stdout)
 	}
 	err = write()
 	if err != nil {
