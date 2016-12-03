@@ -62,7 +62,7 @@ func addCodeXMLError(accum map[string]*file, code string, p, other *ledgertools.
 		}
 		accum[p.SrcFile] = f
 	}
-	msg := fmt.Sprintf("Possible duplicate of %s (%s) at %s:%d", other.DateText(), other.Code, other.SrcFile, other.BegLine)
+	msg := fmt.Sprintf("Duplicate code (%s) at %s %s:%d", code, other.DateText(), other.SrcFile, other.BegLine)
 	f.Errors = append(f.Errors, xmlError{
 		Line:     p.BegLine,
 		Severity: severity,
