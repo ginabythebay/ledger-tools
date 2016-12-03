@@ -14,7 +14,7 @@ import (
 	"github.com/ginabythebay/ledger-tools/register"
 )
 
-//go:generate ledger csv -f integration_src.ledger --csv-format %(quoted(filename)),%(quoted(xact.beg_line)),%(quoted(join(xact.note))),%(quoted(date)),%(quoted(code)),%(quoted(payee)),%(quoted(beg_line)),%(quoted(display_account)),%(quoted(commodity(scrub(display_amount)))),%(quoted(quantity(scrub(display_amount)))),%(quoted(cleared ? "*" : (pending ? "!" : ""))),%(quoted(join(note)))\n | perl -p  -e 's{\".*integration_src.ledger\"}{\"integration_src.ledger\"}'
+//go:generate ./integration_src.sh
 
 var csvText = strings.TrimSpace(`
 "integration_src.ledger","9","","2016/03/21","","Local Grocery Store","10","Expenses:Grocery","$","10","",""

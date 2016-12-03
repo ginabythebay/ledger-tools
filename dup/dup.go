@@ -30,7 +30,7 @@ func newKey(account, amount string, t time.Time) key {
 func suppressedDates(notes []string) []string {
 	var dates []string
 	for _, line := range notes {
-		split := strings.SplitAfterN(line, "SuppressDuplicates:", 2)
+		split := strings.SplitAfterN(line, "SuppressAmountDuplicates:", 2)
 		if len(split) != 2 {
 			continue
 		}
