@@ -21,7 +21,7 @@ var csvText = strings.TrimSpace(`
 "integration_src.ledger","9","","2016/03/21","","Local Grocery Store","11","Liabilities:Credit Card","$","-10","",""
 "integration_src.ledger","12","","2016/03/22","","Another Local Grocery Store","13","Expenses:Grocery","$","10","",""
 "integration_src.ledger","12","","2016/03/22","","Another Local Grocery Store","14","Liabilities:Another Credit Card","$","-10","",""
-"integration_src.ledger","15","","2016/03/25","","Another Local Grocery Store","16","Expenses:Grocery","$","10",""," SuppressDuplicates: 2016/03/22"
+"integration_src.ledger","15","","2016/03/25","","Another Local Grocery Store","16","Expenses:Grocery","$","10",""," SuppressAmountDuplicates: 2016/03/22"
 "integration_src.ledger","15","","2016/03/25","","Another Local Grocery Store","18","Liabilities:Credit Card","$","-10","",""
 "integration_src.ledger","19","","2016/04/21","","Another Local Grocery Store","20","Expenses:Grocery","$","10","",""
 "integration_src.ledger","19","","2016/04/21","","Another Local Grocery Store","21","Liabilities:Another Credit Card","$","-10","",""
