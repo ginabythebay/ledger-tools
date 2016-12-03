@@ -25,7 +25,7 @@ func Test_JavacIntegration(t *testing.T) {
 	}
 
 	var b bytes.Buffer
-	write := JavacWriter(finder.AllPairs, &b)
+	write := JavacWriter(finder.AllDuplicates, &b)
 	ok(t, write())
 
 	exp := strings.TrimSpace(`
