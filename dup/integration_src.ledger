@@ -5,6 +5,7 @@ account Liabilities:Another Credit Card
 account Liabilities:Credit Card
 
 tag SuppressAmountDuplicates
+tag SuppressCodeDuplicates
 
 2016/03/21 Local Grocery Store
     Expenses:Grocery                          $10.00
@@ -19,3 +20,16 @@ tag SuppressAmountDuplicates
 2016/04/21 Another Local Grocery Store
     Expenses:Grocery                          $10.00
     Liabilities:Another Credit Card
+2016/05/01 (foo) Local Grocery Store
+    Expenses:Grocery                          $15.00
+    Liabilities:Credit Card
+2016/05/15 (bar) Local Grocery Store
+    Expenses:Grocery                          $20.00
+    Liabilities:Credit Card
+2016/05/16 (bar) Local Grocery Store
+    ; SuppressCodeDuplicates: 2016/05/15
+    Expenses:Grocery                          $22.00
+    Liabilities:Credit Card
+2016/05/31 (#foo) Another Local Grocery Store
+    Expenses:Grocery                          $25.00
+    Liabilities:Credit Card

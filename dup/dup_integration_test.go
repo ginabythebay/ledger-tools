@@ -29,10 +29,13 @@ func Test_JavacIntegration(t *testing.T) {
 
 	exp := strings.TrimSpace(`
 Possible duplicate $10.00 Expenses:Grocery
-	at 2016/03/21 Local Grocery Store (integration_src.ledger:10)
-	at 2016/03/22 Another Local Grocery Store (integration_src.ledger:13)
+	at 2016/03/21 Local Grocery Store (integration_src.ledger:11)
+	at 2016/03/22 Another Local Grocery Store (integration_src.ledger:14)
+Code duplicate (#foo)
+	at 2016/05/01 Local Grocery Store (integration_src.ledger:23)
+	at 2016/05/31 Another Local Grocery Store (integration_src.ledger:33)
 
- 1 potential duplicates found
+ 2 potential duplicates found
 `)
 	equals(t, exp, strings.TrimSpace(b.String()))
 }

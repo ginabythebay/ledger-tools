@@ -73,6 +73,7 @@ type Finder struct {
 	// # days to use when looking for matches.  0 means only look for matches on exactly the same day
 	Days int
 
+	codeMap   map[string][]*ledgertools.Transaction
 	amountMap map[amountKey][]*ledgertools.Posting
 
 	allDuplicates []duplicate
@@ -82,6 +83,7 @@ type Finder struct {
 func NewFinder(days int) *Finder {
 	return &Finder{
 		Days:      days,
+		codeMap:   make(map[string][]*ledgertools.Transaction),
 		amountMap: make(map[amountKey][]*ledgertools.Posting),
 	}
 }
@@ -89,9 +91,27 @@ func NewFinder(days int) *Finder {
 // Add adds t and its postings and tracks any existing postings that
 // have the same amount and are within the configured number of days.
 func (f *Finder) Add(t *ledgertools.Transaction) {
+	f.addCodeXact(t)
 	for _, p := range t.Postings {
 		f.addAmountPosting(p)
 	}
+}
+
+func (f *Finder) addCodeXact(t *ledgertools.Transaction) {
+	if t.Code == "" {
+		return
+	}
+	code := t.Code
+	if !strings.HasPrefix(code, "#") {
+		code = "#" + code
+	}
+	for _, m := range f.codeMap[code] {
+		cp := newCodePair(m, t)
+		if !cp.isSuppressed() {
+			f.allDuplicates = append(f.allDuplicates, cp)
+		}
+	}
+	f.codeMap[code] = append(f.codeMap[code], t)
 }
 
 func (f *Finder) addAmountPosting(p *ledgertools.Posting) {
