@@ -14,15 +14,18 @@ import (
 	"github.com/ginabythebay/ledger-tools/register"
 )
 
+//go:generate ledger csv -f integration_src.ledger --csv-format %(quoted(filename)),%(quoted(xact.beg_line)),%(quoted(join(xact.note))),%(quoted(date)),%(quoted(code)),%(quoted(payee)),%(quoted(beg_line)),%(quoted(display_account)),%(quoted(commodity(scrub(display_amount)))),%(quoted(quantity(scrub(display_amount)))),%(quoted(cleared ? "*" : (pending ? "!" : ""))),%(quoted(join(note)))\n | perl -p  -e 's{\".*integration_src.ledger\"}{\"integration_src.ledger\"}'
+
 var csvText = strings.TrimSpace(`
-"register.ledger","9","","2016/03/21","","Local Grocery Store","10","Expenses:Grocery","$","10","",""
-"register.ledger","9","","2016/03/21","","Local Grocery Store","11","Liabilities:Credit Card","$","-10","",""
-"register.ledger","13","","2016/03/22","","Another Local Grocery Store","14","Expenses:Grocery","$","10","",""
-"register.ledger","13","","2016/03/22","","Another Local Grocery Store","15","Liabilities:Another Credit Card","$","-10","",""
-"register.ledger","17","","2016/03/25","","Another Local Grocery Store","18","Expenses:Grocery","$","10",""," SuppressDuplicates: 2016/03/22"
-"register.ledger","17","","2016/03/25","","Another Local Grocery Store","20","Liabilities:Credit Card","$","-10","",""
-"register.ledger","22","","2016/04/21","","Another Local Grocery Store","23","Expenses:Grocery","$","10","",""
-"register.ledger","22","","2016/04/21","","Another Local Grocery Store","24","Liabilities:Another Credit Card","$","-10","",""`)
+"integration_src.ledger","9","","2016/03/21","","Local Grocery Store","10","Expenses:Grocery","$","10","",""
+"integration_src.ledger","9","","2016/03/21","","Local Grocery Store","11","Liabilities:Credit Card","$","-10","",""
+"integration_src.ledger","12","","2016/03/22","","Another Local Grocery Store","13","Expenses:Grocery","$","10","",""
+"integration_src.ledger","12","","2016/03/22","","Another Local Grocery Store","14","Liabilities:Another Credit Card","$","-10","",""
+"integration_src.ledger","15","","2016/03/25","","Another Local Grocery Store","16","Expenses:Grocery","$","10",""," SuppressDuplicates: 2016/03/22"
+"integration_src.ledger","15","","2016/03/25","","Another Local Grocery Store","18","Liabilities:Credit Card","$","-10","",""
+"integration_src.ledger","19","","2016/04/21","","Another Local Grocery Store","20","Expenses:Grocery","$","10","",""
+"integration_src.ledger","19","","2016/04/21","","Another Local Grocery Store","21","Liabilities:Another Credit Card","$","-10","",""
+`)
 
 func Test_JavacIntegration(t *testing.T) {
 	allTrans := readRegister(t, csvText)
@@ -38,10 +41,11 @@ func Test_JavacIntegration(t *testing.T) {
 
 	exp := strings.TrimSpace(`
 Possible duplicate $10.00 Expenses:Grocery
-	at 2016/03/21 Local Grocery Store (register.ledger:10)
-	at 2016/03/22 Another Local Grocery Store (register.ledger:14)
+	at 2016/03/21 Local Grocery Store (integration_src.ledger:10)
+	at 2016/03/22 Another Local Grocery Store (integration_src.ledger:13)
 
- 1 potential duplicates found`)
+ 1 potential duplicates found
+`)
 	equals(t, exp, strings.TrimSpace(b.String()))
 }
 
