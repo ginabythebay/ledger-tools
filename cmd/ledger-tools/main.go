@@ -292,13 +292,11 @@ func cmdLint(c *cli.Context) (result error) {
 		finder.Add(t)
 	}
 
-	var write dup.Writer
 	if checkStyle {
-		write = dup.CheckStyleWriter(finder.AllDuplicates, os.Stdout)
+		err = finder.WriteCheckStyle(os.Stdout)
 	} else {
-		write = dup.JavacWriter(finder.AllDuplicates, os.Stdout)
+		err = finder.WriteJavacStyle(os.Stdout)
 	}
-	err = write()
 	if err != nil {
 		log.Fatal(err)
 	}

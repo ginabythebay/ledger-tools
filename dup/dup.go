@@ -2,6 +2,7 @@ package dup
 
 import (
 	"bytes"
+	"encoding/xml"
 	"fmt"
 	"io"
 	"strings"
@@ -64,7 +65,7 @@ func isDateSuppressed(date string, notes []string) bool {
 	return false
 }
 
-type Duplicate interface {
+type duplicate interface {
 	compilerText() (string, error)
 	isSuppressed() bool
 	accumXMLErrors(accum map[string]*file)
@@ -114,7 +115,7 @@ type Finder struct {
 
 	m map[key][]*ledgertools.Posting
 
-	AllDuplicates []Duplicate
+	allDuplicates []duplicate
 }
 
 // NewFinder creates a new Finder.
@@ -153,29 +154,72 @@ func (f *Finder) addPosting(p *ledgertools.Posting) {
 	for _, m := range matches {
 		p := Pair{m, p}
 		if !p.isSuppressed() {
-			f.AllDuplicates = append(f.AllDuplicates, p)
+			f.allDuplicates = append(f.allDuplicates, p)
 		}
 	}
 
 	f.m[k] = append(f.m[k], p)
 }
 
-type Writer func() error
-
-func JavacWriter(allDuplicates []Duplicate, w io.Writer) Writer {
-	return func() error {
-		matchCount := 0
-		for _, d := range allDuplicates {
-			s, err := d.compilerText()
-			if err != nil {
-				return err
-			}
-			matchCount++
-
-			fmt.Fprintln(w, s)
+// WriteJavacStyle writes javac-style output for all duplicates found.
+func (f *Finder) WriteJavacStyle(w io.Writer) error {
+	matchCount := 0
+	for _, d := range f.allDuplicates {
+		s, err := d.compilerText()
+		if err != nil {
+			return err
 		}
+		matchCount++
 
-		fmt.Fprintf(w, "\n %d potential duplicates found\n", matchCount)
-		return nil
+		fmt.Fprintln(w, s)
 	}
+
+	fmt.Fprintf(w, "\n %d potential duplicates found\n", matchCount)
+	return nil
+}
+
+// WriteCheckStyle writes checkstyle (xml) output for all duplicates found.
+func (f *Finder) WriteCheckStyle(w io.Writer) error {
+	accum := map[string]*file{}
+	for _, d := range f.allDuplicates {
+		d.accumXMLErrors(accum)
+	}
+
+	var allFiles []*file
+	for _, f := range accum {
+		allFiles = append(allFiles, f)
+	}
+	cs := checkstyle{
+		Version: version,
+		Files:   allFiles,
+	}
+	enc := xml.NewEncoder(w)
+	enc.Indent("", "  ")
+	return enc.Encode(&cs)
+}
+
+const (
+	version  = "7.2"
+	severity = "warning"
+	source   = "dupdetector"
+)
+
+type checkstyle struct {
+	XMLName xml.Name `xml:"checkstyle"`
+	Version string   `xml:"version,attr"`
+	Files   []*file
+}
+
+type file struct {
+	XMLName xml.Name `xml:"file"`
+	Name    string   `xml:"name,attr"`
+	Errors  []xmlError
+}
+
+type xmlError struct {
+	XMLName  xml.Name `xml:"error"`
+	Line     int      `xml:"line,attr"`
+	Severity string   `xml:"severity,attr"`
+	Message  string   `xml:"message,attr"`
+	Source   string   `xml:"source,attr"`
 }

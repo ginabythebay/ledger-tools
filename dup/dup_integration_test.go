@@ -25,8 +25,7 @@ func Test_JavacIntegration(t *testing.T) {
 	}
 
 	var b bytes.Buffer
-	write := JavacWriter(finder.AllDuplicates, &b)
-	ok(t, write())
+	ok(t, finder.WriteJavacStyle(&b))
 
 	exp := strings.TrimSpace(`
 Possible duplicate $10.00 Expenses:Grocery
