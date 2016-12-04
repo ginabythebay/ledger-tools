@@ -52,10 +52,13 @@ var commentMatchers = []mailimp.LineMatcher{
 
 // If we see any of these, then we want to capture the following line
 // as a comment.
-var commentPrefixes = []string{
-	"Track your package at:",
-	"View or manage your order in Your Orders:",
-	"Your invoice can be accessed here:",
+var commentPrefixes = []mailimp.LineMatcher{
+	mailimp.PrefixMatcher([]string{
+		"Track your package at:",
+		"Why tracking information may not be available?:",
+	}),
+	mailimp.PrefixMatcher([]string{"View or manage your order in Your Orders:"}),
+	mailimp.PrefixMatcher([]string{"Your invoice can be accessed here:"}),
 }
 
 // importMessage imports an email message.  Returns nil if msg does
@@ -141,7 +144,7 @@ func importMessage(msg ledgertools.Message) (*importer.Parsed, error) {
 		}
 		if lastLine != "" {
 			for _, pre := range commentPrefixes {
-				if strings.HasPrefix(lastLine, pre) {
+				if pre.Match(lastLine) != nil {
 					comments = append(comments, strings.TrimSpace(line))
 				}
 			}
