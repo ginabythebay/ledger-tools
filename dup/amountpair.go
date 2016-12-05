@@ -51,7 +51,7 @@ func addAmountXMLError(accum map[string]*file, p, other *ledgertools.Posting) {
 		}
 		accum[p.Xact.SrcFile] = f
 	}
-	msg := fmt.Sprintf("Possible duplicate of %s %s %s at %s:%d", other.Xact.DateText(), other.AmountText(), other.Account, other.Xact.SrcFile, other.BegLine)
+	msg := fmt.Sprintf("Possible duplicate of %s %s %s %s at %s:%d", other.Xact.DateText(), other.Xact.Payee, other.AmountText(), other.Account, other.Xact.SrcFile, other.BegLine)
 	f.Errors = append(f.Errors, xmlError{
 		Line:     p.BegLine,
 		Severity: severity,
