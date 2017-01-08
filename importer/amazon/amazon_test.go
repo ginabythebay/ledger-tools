@@ -83,8 +83,6 @@ func TestStdImport(t *testing.T) {
 			`"Some Item..." and one other item have shipped.`,
 			"Order #123-1234567-1234567",
 			"https://www.amazon.com/sometrackinglink",
-			"https://www.amazon.com/someorderlink",
-			"https://www.amazon.com/invoicelink",
 		},
 		parsed.Comments)
 	equals(t, "$28.02", parsed.Amount)
@@ -163,8 +161,6 @@ func TestStdImport2(t *testing.T) {
 			`"Some item..." has shipped.`,
 			"Order #987-9876543-9876543",
 			"http://www.amazon.com/why",
-			"https://www.amazon.com/manage",
-			"https://www.amazon.com/invoice",
 		},
 		parsed.Comments)
 	equals(t, "$14.99", parsed.Amount)
@@ -176,6 +172,86 @@ func BenchmarkStdImport2(b *testing.B) {
 		importMessage(stdMsg2)
 	}
 }
+
+
+////////////////////////////////////////
+
+
+var stdEmail3 = strings.TrimSpace(`
+Amazon Shipping Confirmation
+https://www.amazon.com?ie=UTF8&ref_=scr_home
+
+____________________________________________________________________
+
+Hi Gina, your package will arrive:
+Tuesday, December 27
+
+Track your package:
+https://www.amazon.com/trackinglink
+
+On the way:
+some things...
+Order #anordernumber
+
+Ship to:
+Gina White
+an address...
+
+Shipment total:
+$11.73
+
+Return or replace items in Your Orders
+https://www.amazon.com/returnorreplacelink
+
+____________________________________________________________________
+
+
+Unless otherwise noted, items sold by Amazon.com LLC are subject to sales tax in select states in accordance with the applicable laws of that state. If your order contains one or more items from a seller other than Amazon.com LLC, it may be subject to state and local sales tax, depending upon the sellers business policies and the location of their operations. Learn more about tax and seller information:
+http://www.amazon.com/infolink
+
+Your invoice can be accessed here:
+https://www.amazon.com/invoicelink
+
+This email was sent from a notification-only address that cannot accept incoming email. Please do not reply to this message.
+`)
+
+var stdMsg3 = ledgertools.NewMessage(
+	"Fri, 23 Dec 2016 22:07:42 +0000",
+	"client@somehost.com",
+	fromMatcher,
+	"Your Amazon.com order has shipped (#987-9876543-9876543)",
+	stdEmail3,
+	"")
+
+func TestStdImport3(t *testing.T) {
+	parsed, err := importMessage(stdMsg3)
+	ok(t, err)
+
+	year, month, day := parsed.Date.Date()
+	equals(t, 2016, year)
+	equals(t, time.December, month)
+	equals(t, 23, day)
+
+	equals(t, "anordernumber", parsed.CheckNumber)
+	equals(t,
+		[]string{
+			"https://www.amazon.com/trackinglink",
+			"some things...",
+			"Order #anordernumber",
+		},
+		parsed.Comments)
+	equals(t, "$11.73", parsed.Amount)
+	equals(t, defaultPayment, parsed.PaymentInstrument)
+}
+
+func BenchmarkStdImport3(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		importMessage(stdMsg3)
+	}
+}
+
+////////////////////////////////////////
+
 
 var smileEmail = strings.TrimSpace(`
 AmazonSmile Shipping Confirmation
@@ -247,8 +323,6 @@ func TestSmileImport(t *testing.T) {
 			`"Some item..." has shipped.`,
 			"Order #987-9876543-9876543",
 			"https://smile.amazon.com/trackinglink",
-			"https://smile.amazon.com/orderlink",
-			"https://smile.amazon.com/invoicelink",
 		},
 		parsed.Comments)
 	equals(t, "$22.99", parsed.Amount)
@@ -332,8 +406,6 @@ func TestBookImport(t *testing.T) {
 			`"Book Title..." has shipped.`,
 			"Order #123-1234567-1234567",
 			"https://www.amazon.com/trackinglink",
-			"https://www.amazon.com/orderlink",
-			"https://www.amazon.com/invoicelink",
 		},
 		parsed.Comments)
 	equals(t, "$23.24", parsed.Amount)
@@ -343,15 +415,6 @@ func TestBookImport(t *testing.T) {
 func BenchmarkBookImport(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		importMessage(stdMsg)
-	}
-}
-
-// assert fails the test if the condition is false.
-func assert(tb testing.TB, condition bool, msg string, v ...interface{}) {
-	if !condition {
-		_, file, line, _ := runtime.Caller(1)
-		fmt.Printf("\033[31m%s:%d: "+msg+"\033[39m\n\n", append([]interface{}{filepath.Base(file), line}, v...)...)
-		tb.FailNow()
 	}
 }
 

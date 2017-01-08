@@ -44,6 +44,7 @@ var GmailImporter = importer.NewGmailImporter(
 
 var orderMatcher = mailimp.PrefixMatcher([]string{"Order #"})
 var totalMatcher = mailimp.PrefixMatcher([]string{"    Shipment Total: "})
+var totalPrefixMatcher = mailimp.PrefixMatcher([]string{"Shipment total:"})
 
 var commentMatchers = []mailimp.LineMatcher{
 	mailimp.SuffixMatcher([]string{" has shipped.", " have shipped."}),
@@ -55,10 +56,10 @@ var commentMatchers = []mailimp.LineMatcher{
 var commentPrefixes = []mailimp.LineMatcher{
 	mailimp.PrefixMatcher([]string{
 		"Track your package at:",
+		"Track your package:",
 		"Why tracking information may not be available?:",
 	}),
-	mailimp.PrefixMatcher([]string{"View or manage your order in Your Orders:"}),
-	mailimp.PrefixMatcher([]string{"Your invoice can be accessed here:"}),
+	mailimp.PrefixMatcher([]string{"On the way:"}),
 }
 
 // importMessage imports an email message.  Returns nil if msg does
@@ -148,6 +149,10 @@ func importMessage(msg ledgertools.Message) (*importer.Parsed, error) {
 					comments = append(comments, strings.TrimSpace(line))
 				}
 			}
+
+			if totalPrefixMatcher.Match(lastLine) != nil {
+				amount = line
+			}
 		}
 
 		if match := orderMatcher.Match(line); match != nil {
@@ -167,11 +172,11 @@ func importMessage(msg ledgertools.Message) (*importer.Parsed, error) {
 	if checkNumber == "" {
 		return nil, errors.Errorf("Missing valid order line in %q", msg.TextPlain)
 	}
-	if len(comments) != len(commentMatchers)+len(commentPrefixes) {
+	if len(comments) != len(commentMatchers)+len(commentPrefixes)-1 {
 		return nil, errors.Errorf("Missing comments.  Found %q in %q", comments, msg.TextPlain)
 	}
 	if amount == "" {
-		return nil, errors.Errorf("Total line in %q", msg.TextPlain)
+		return nil, errors.Errorf("Missing total line in %q", msg.TextPlain)
 	}
 
 	return importer.NewParsed(
