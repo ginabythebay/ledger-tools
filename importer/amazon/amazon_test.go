@@ -61,7 +61,7 @@ This email was sent from a notification-only address that cannot accept incoming
 `)
 
 var stdMsg = ledgertools.NewMessage(
-	"Sat, 24 Sep 2016 19:23:57 +0000",
+	"Sat, 4 Sep 2016 19:23:57 +0000",
 	"client@somehost.com",
 	fromMatcher,
 	"Your Amazon.com order has shipped (#123-1234567-1234567)",
@@ -75,7 +75,7 @@ func TestStdImport(t *testing.T) {
 	year, month, day := parsed.Date.Date()
 	equals(t, 2016, year)
 	equals(t, time.September, month)
-	equals(t, 24, day)
+	equals(t, 4, day)
 
 	equals(t, "123-1234567-1234567", parsed.CheckNumber)
 	equals(t,
@@ -173,10 +173,6 @@ func BenchmarkStdImport2(b *testing.B) {
 	}
 }
 
-
-////////////////////////////////////////
-
-
 var stdEmail3 = strings.TrimSpace(`
 Amazon Shipping Confirmation
 https://www.amazon.com?ie=UTF8&ref_=scr_home
@@ -249,9 +245,6 @@ func BenchmarkStdImport3(b *testing.B) {
 		importMessage(stdMsg3)
 	}
 }
-
-////////////////////////////////////////
-
 
 var smileEmail = strings.TrimSpace(`
 AmazonSmile Shipping Confirmation

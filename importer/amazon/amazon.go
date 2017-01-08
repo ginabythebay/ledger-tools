@@ -119,7 +119,7 @@ func importMessage(msg ledgertools.Message) (*importer.Parsed, error) {
 		return nil, nil
 	}
 
-	date, err := time.Parse(time.RFC1123Z, msg.Date)
+	date, err := time.Parse("Mon, 2 Jan 2006 15:04:05 -0700", msg.Date)
 	if err != nil {
 		return nil, errors.Wrapf(err, "Parsing date in %v", msg)
 	}
