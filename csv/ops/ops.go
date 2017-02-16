@@ -76,6 +76,17 @@ func CheckWithdrawal(i int) Mutator {
 	}
 }
 
+// RemoveText removes the substring rem, if it is present, up to one time.
+func RemoveText(i int, rem string) Mutator {
+	return func(l *Line) error {
+		if l.LineNo != 1 {
+			value := l.Record[i]
+			l.Record[i] = strings.Replace(value, rem, "", 1)
+		}
+		return nil
+	}
+}
+
 func DeparenNegatives(i int) Mutator {
 	return func(l *Line) error {
 		if l.LineNo != 1 {
