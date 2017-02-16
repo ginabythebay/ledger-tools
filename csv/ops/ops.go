@@ -1,6 +1,8 @@
 package ops
 
 import (
+	"fmt"
+	"regexp"
 	"strings"
 )
 
@@ -54,6 +56,21 @@ func Negate(i int) Mutator {
 		if l.LineNo != 1 {
 			value := l.Record[i]
 			l.Record[i] = negate(value)
+		}
+		return nil
+	}
+}
+
+// CheckWithdrawal converts an entry like 'Check Withdrawal: #999999'
+// to '(#999999)'
+func CheckWithdrawal(i int) Mutator {
+	r := regexp.MustCompile(`^Check Withdrawal: (#\d+).*$`)
+	return func(l *Line) error {
+		if l.LineNo != 1 {
+			value := l.Record[i]
+			if matches := r.FindStringSubmatch(value); matches != nil {
+				l.Record[i] = fmt.Sprintf("(%s)", matches[1])
+			}
 		}
 		return nil
 	}

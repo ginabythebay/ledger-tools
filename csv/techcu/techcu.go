@@ -19,5 +19,6 @@ const (
 func Mutators() []ops.Mutator {
 	return []ops.Mutator{
 		ops.DeparenNegatives(amount),
+		ops.CheckWithdrawal(description),
 	}
 }
