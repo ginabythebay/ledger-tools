@@ -241,9 +241,10 @@ func cmdCsv(c *cli.Context) (result error) {
 	if c.String("type") == "" {
 		log.Fatalf("You must set the -type flag.  Valid values are [%s]", strings.Join(typeNames, ", "))
 	}
-	mutators := csvTypes[c.String("type")]
+	csvType := c.String("type")
+	mutators := csvTypes[csvType]
 	if mutators == nil {
-		log.Fatalf("Unexpected csv type %q.  Valid types are [%s]", c.String("type"), strings.Join(typeNames, ", "))
+		log.Fatalf("Unexpected csv type %q.  Valid types are [%s]", csvType, strings.Join(typeNames, ", "))
 	}
 
 	streams := openStreams{}
@@ -265,7 +266,12 @@ func cmdCsv(c *cli.Context) (result error) {
 		streams.add(o)
 	}
 
-	cnt, err := csv.Process(mutators, in, o)
+	var headers []string
+	if csvType == "citi" {
+		headers = citi.Headers
+	}
+
+	cnt, err := csv.Process(mutators, in, o, headers)
 	if err != nil {
 		log.Fatal(err)
 	}

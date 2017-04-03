@@ -29,7 +29,7 @@ func NewLine(lineNo int, record []string) *Line {
 	return &Line{lineNo, record}
 }
 
-// ReplaceHeader removes the first line
+// ReplaceHeader changes the first line
 func ReplaceHeader(header []string) Mutator {
 	return func(l *Line) error {
 		if l.LineNo == 1 {
@@ -136,6 +136,7 @@ func StripSuffix(i int, suffix string) Mutator {
 	}
 }
 
+// StripNewlines removes any newlines in a record
 func StripNewlines(l *Line) error {
 	for i, c := range l.Record {
 		if strings.Contains(c, "\n") {

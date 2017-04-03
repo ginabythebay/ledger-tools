@@ -49,19 +49,18 @@ func equals(tb testing.TB, exp, act interface{}) {
 //
 
 var citiInput = strings.TrimSpace(`
-"Status","Date","Description","Debit","Credit"
-"Cleared","07/27/2016","GITHUB.COM  2IK4B        415-448-6673 CA
-","1,000.01",""
-"Cleared","08/09/2016","NORDSTROM #0427          SAN FRANCISCOCA
-","","2.02"
-"Cleared","08/25/2016","INTEREST CHARGED TO STANDARD PURCH      
-","3.03",""
+"07/27/2016","$7.00","GITHUB.COM  2IK4B        415-448-6673 CA
+","1","Some Person"
+"08/09/2016","$2.02","NORDSTROM #0427          SAN FRANCISCOCA
+","1","Some Person"
+"08/25/2016","$3.03","INTEREST CHARGED TO STANDARD PURCH      
+","1","Some Person"
 `)
 
-const citiExpected = `cleared,date,payee,amount,credit
-Cleared,07/27/2016,GITHUB.COM  2IK4B        415-448-6673 CA,$1000.01,
-Cleared,08/09/2016,NORDSTROM #0427          SAN FRANCISCOCA,$-2.02,
-Cleared,08/25/2016,INTEREST CHARGED TO STANDARD PURCH      ,$3.03,
+const citiExpected = `date,amount,payee,,
+07/27/2016,$7.00,GITHUB.COM  2IK4B        415-448-6673 CA,1,Some Person
+08/09/2016,$2.02,NORDSTROM #0427          SAN FRANCISCOCA,1,Some Person
+08/25/2016,$3.03,INTEREST CHARGED TO STANDARD PURCH      ,1,Some Person
 `
 
 type testCase struct {
@@ -73,7 +72,7 @@ type testCase struct {
 
 func (c testCase) testFunc(t *testing.T) {
 	var buf bytes.Buffer
-	actLineCnt, err := Process(c.mutators, strings.NewReader(c.input), &buf)
+	actLineCnt, err := Process(c.mutators, strings.NewReader(c.input), &buf, citi.Headers)
 	ok(t, err)
 	actual := buf.String()
 	equals(t, c.expected, actual)
