@@ -35,6 +35,7 @@ func Process(mutators []ops.Mutator, reader io.Reader, writer io.Writer, header 
 			parseErr, ok := err.(*csv.ParseError)
 			if ok && parseErr.Err == csv.ErrFieldCount && len(record) == 1 {
 				log.Printf("Skipping blank line %d", parseErr.Line)
+				continue
 			} else {
 				return 0, err
 			}
