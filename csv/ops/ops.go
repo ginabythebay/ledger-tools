@@ -29,6 +29,7 @@ func NewLine(lineNo int, record []string) *Line {
 	return &Line{lineNo, record}
 }
 
+// ReplaceHeader removes the first line
 func ReplaceHeader(header []string) Mutator {
 	return func(l *Line) error {
 		if l.LineNo == 1 {
